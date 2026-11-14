@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+node_modules/
+dist/
+.vite/
+
+.DS_Store
+
+# generated benchmark repositories (nested .git dirs) and experiment outputs
+datasets/benchmark/generated/
+results/

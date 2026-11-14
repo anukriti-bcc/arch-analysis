@@ -1,0 +1,43 @@
+{
+ "analysis_id": "A0001",
+ "architectural_intent": null,
+ "decision": null,
+ "evolution_evidence": null,
+ "expected": "service must not depend directly on database",
+ "id": "F006",
+ "key": "R004|app/services/quote_service.py|app/database/connection.py",
+ "location": {
+  "file": "app/services/quote_service.py",
+  "line": 1
+ },
+ "observed": "service depends directly on database",
+ "rule_id": "R004",
+ "semantic_analysis": null,
+ "severity": "high",
+ "source": {
+  "component": "service",
+  "id": "app/services/quote_service.py",
+  "name": "quote_service.py"
+ },
+ "status": "violation",
+ "structural_evidence": {
+  "dependency": {
+   "location": {
+    "file": "app/services/quote_service.py",
+    "line": 1
+   },
+   "raw_reference": "app.database.connection.get_connection",
+   "source": "app/services/quote_service.py",
+   "source_component": "service",
+   "target": "app/database/connection.py",
+   "target_component": "database",
+   "type": "import"
+  },
+  "rule_id": "R004"
+ },
+ "target": {
+  "component": "database",
+  "id": "app/database/connection.py",
+  "name": "connection.py"
+ }
+}

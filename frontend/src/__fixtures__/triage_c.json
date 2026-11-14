@@ -1,0 +1,34 @@
+{
+ "analysis_id": "A0001",
+ "items": [
+  {
+   "active_adr_count": 1,
+   "adr_count": 1,
+   "age_days": 179,
+   "direct_verdict": null,
+   "escalate": true,
+   "finding_id": "F006",
+   "introduced_at": "2025-07-14T12:00:00+00:00",
+   "key": "R004|app/services/quote_service.py|app/database/connection.py",
+   "reasons": [
+    "I1: active decision record(s) relevant: ADR-030"
+   ],
+   "rule_id": "R004",
+   "source": {
+    "component": "service",
+    "id": "app/services/quote_service.py",
+    "name": "quote_service.py"
+   },
+   "target": {
+    "component": "database",
+    "id": "app/database/connection.py",
+    "name": "connection.py"
+   }
+  }
+ ],
+ "summary": {
+  "needs_semantic_review": 1,
+  "resolved_directly": 0,
+  "violations": 1
+ }
+}

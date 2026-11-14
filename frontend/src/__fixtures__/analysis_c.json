@@ -1,0 +1,124 @@
+{
+ "analysis_id": "A0001",
+ "architecture": "layered-architecture",
+ "components": 12,
+ "created_at": "2026-11-13T03:06:34.369239+00:00",
+ "dependencies": 7,
+ "external_imports": [],
+ "findings": [
+  {
+   "id": "F001",
+   "rule_id": "R001",
+   "severity": "unset",
+   "source": {
+    "component": "controller",
+    "id": "app/controllers/analytics_controller.py",
+    "name": "analytics_controller.py"
+   },
+   "status": "conformant",
+   "target": {
+    "component": "service",
+    "id": "app/services/analytics_service.py",
+    "name": "analytics_service.py"
+   }
+  },
+  {
+   "id": "F002",
+   "rule_id": "R001",
+   "severity": "unset",
+   "source": {
+    "component": "controller",
+    "id": "app/controllers/quote_controller.py",
+    "name": "quote_controller.py"
+   },
+   "status": "conformant",
+   "target": {
+    "component": "service",
+    "id": "app/services/quote_service.py",
+    "name": "quote_service.py"
+   }
+  },
+  {
+   "id": "F003",
+   "rule_id": "R003",
+   "severity": "unset",
+   "source": {
+    "component": "repository",
+    "id": "app/repositories/analytics_repository.py",
+    "name": "analytics_repository.py"
+   },
+   "status": "conformant",
+   "target": {
+    "component": "database",
+    "id": "app/database/connection.py",
+    "name": "connection.py"
+   }
+  },
+  {
+   "id": "F004",
+   "rule_id": "R003",
+   "severity": "unset",
+   "source": {
+    "component": "repository",
+    "id": "app/repositories/quote_repository.py",
+    "name": "quote_repository.py"
+   },
+   "status": "conformant",
+   "target": {
+    "component": "database",
+    "id": "app/database/connection.py",
+    "name": "connection.py"
+   }
+  },
+  {
+   "id": "F005",
+   "rule_id": "R002",
+   "severity": "unset",
+   "source": {
+    "component": "service",
+    "id": "app/services/analytics_service.py",
+    "name": "analytics_service.py"
+   },
+   "status": "conformant",
+   "target": {
+    "component": "repository",
+    "id": "app/repositories/analytics_repository.py",
+    "name": "analytics_repository.py"
+   }
+  },
+  {
+   "id": "F006",
+   "rule_id": "R004",
+   "severity": "high",
+   "source": {
+    "component": "service",
+    "id": "app/services/quote_service.py",
+    "name": "quote_service.py"
+   },
+   "status": "violation",
+   "target": {
+    "component": "database",
+    "id": "app/database/connection.py",
+    "name": "connection.py"
+   }
+  },
+  {
+   "id": "F007",
+   "rule_id": "R002",
+   "severity": "unset",
+   "source": {
+    "component": "service",
+    "id": "app/services/quote_service.py",
+    "name": "quote_service.py"
+   },
+   "status": "conformant",
+   "target": {
+    "component": "repository",
+    "id": "app/repositories/quote_repository.py",
+    "name": "quote_repository.py"
+   }
+  }
+ ],
+ "repository": "/data/bench/C01/repo",
+ "rules": 6
+}

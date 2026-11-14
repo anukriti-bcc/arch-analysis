@@ -1,0 +1,91 @@
+{
+ "analysis_id": "A0003",
+ "evidence": {
+  "adrs": [
+   {
+    "date": "2025-06-07",
+    "id": "ADR-020",
+    "match_reasons": [
+     "rule_id",
+     "file_names",
+     "component_types"
+    ],
+    "path": "architecture/adr/0020-allow-catalog_controller-to-use-catalog_.md",
+    "status": "superseded",
+    "status_raw": "Superseded by ADR-040",
+    "text": "# Allow catalog_controller to use catalog_repository directly\n\n* Status: Superseded by ADR-040\n* Date: 2025-06-07\n\n## Context and Problem Statement\n\nThe layering rule R005 normally forbids this dependency, but reporting queries need a consistent read snapshot.\n\n## Decision Outcome\n\nThe catalog controller (`catalog_controller`) is permitted to access the catalog repository (`catalog_repository`) directly. This is a deliberate, permanent exception to rule R005.\n\n### Consequences\n\nNo other module is covered by this exception.\n",
+    "title": "Allow catalog_controller to use catalog_repository directly"
+   }
+  ],
+  "evolution": {
+   "age_days": 73,
+   "authors_since_introduction": [
+    "bob"
+   ],
+   "available": true,
+   "commits_examined": 3,
+   "commits_since_introduction": 6,
+   "first_introduced_at": "2025-06-25T12:00:00+00:00",
+   "history_truncated": false,
+   "introduced_at": "2025-06-25T12:00:00+00:00",
+   "introduced_with_file_creation": false,
+   "introducing_commit": {
+    "author": "carol",
+    "date": "2025-06-25T12:00:00+00:00",
+    "message": "Add catalog detail endpoint",
+    "sha": "70b9db5429038b34f414b4977f8db7d6158f3059",
+    "short": "70b9db54",
+    "subject": "Add catalog detail endpoint"
+   },
+   "message_signals": {
+    "adr_references": [],
+    "issue_references": [],
+    "migration_language": [],
+    "temporary_language": []
+   },
+   "present_at_head": true,
+   "reintroduced": false,
+   "relevant_commits_since_introduction": 1,
+   "rename_history_detected": false,
+   "snapshot_commit": "927b567c",
+   "snapshot_date": "2025-09-06T12:00:00+00:00",
+   "source": "app/controllers/catalog_controller.py",
+   "target": "app/repositories/catalog_repository.py",
+   "timeline": [
+    {
+     "author": "carol",
+     "change": "introduced",
+     "date": "2025-06-25T12:00:00+00:00",
+     "sha": "70b9db5429038b34f414b4977f8db7d6158f3059",
+     "short": "70b9db54",
+     "subject": "Add catalog detail endpoint"
+    }
+   ]
+  },
+  "finding_key": "R005|app/controllers/catalog_controller.py|app/repositories/catalog_repository.py",
+  "rule": {
+   "description": "Controllers must not skip the Service layer to call Repositories directly.",
+   "id": "R005",
+   "name": "no-controller-repository",
+   "relation": "forbidden"
+  },
+  "snapshot_date": "2025-09-06T12:00:00+00:00",
+  "structural": {
+   "code_snippet": "   1: from app.repositories.catalog_repository import CatalogRepository\n   2: from app.services.catalog_service import CatalogService\n   3: \n   4: \n   5: class CatalogController:",
+   "import": "app.repositories.catalog_repository.CatalogRepository",
+   "line": 1,
+   "source": "app/controllers/catalog_controller.py",
+   "source_type": "controller",
+   "target": "app/repositories/catalog_repository.py",
+   "target_type": "repository"
+  }
+ },
+ "finding_id": "F001",
+ "policy": {
+  "direct_verdict": "violation",
+  "escalate": false,
+  "reasons": [
+   "I2: relevant records are all inactive (ADR-020=superseded)"
+  ]
+ }
+}

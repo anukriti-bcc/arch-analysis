@@ -1,0 +1,161 @@
+{
+ "analysis_id": "A0001",
+ "decision": {
+  "direct_verdict": null,
+  "escalate": true,
+  "final_verdict": "justified",
+  "forced": false,
+  "llm_called": true,
+  "outcome_source": "llm",
+  "reasons": [
+   "I1: active decision record(s) relevant: ADR-030"
+  ]
+ },
+ "evidence": {
+  "adrs": [
+   {
+    "date": "2025-08-18",
+    "id": "ADR-030",
+    "match_reasons": [
+     "rule_id",
+     "file_names",
+     "component_types"
+    ],
+    "path": "architecture/adr/0030-grandfather-direct-access-from-quote_ser.md",
+    "status": "accepted",
+    "status_raw": "Accepted",
+    "text": "# Grandfather direct access from quote_service during the layer migration\n\n* Status: Accepted\n* Date: 2025-08-18\n\n## Context and Problem Statement\n\nRule R004 forbids this access, but the data-access layer does not yet support streaming reads, and the proper layer will not be ready for some time.\n\n## Decision Outcome\n\nUntil the layer migration completes, the quote service (`quote_service`) may continue to access the database connection module (`connection`) directly. Dependencies of this kind introduced on or before 2025-09-13 are grandfathered. Any such dependency introduced after 2025-09-13 is NOT covered by this decision and must be treated as a violation of R004.\n\n### Consequences\n\nGrandfathered dependencies must be removed when the migration finishes.\n",
+    "title": "Grandfather direct access from quote_service during the layer migration"
+   }
+  ],
+  "evolution": {
+   "age_days": 179,
+   "authors_since_introduction": [
+    "bob"
+   ],
+   "available": true,
+   "commits_examined": 5,
+   "commits_since_introduction": 9,
+   "first_introduced_at": "2025-07-14T12:00:00+00:00",
+   "history_truncated": false,
+   "introduced_at": "2025-07-14T12:00:00+00:00",
+   "introduced_with_file_creation": false,
+   "introducing_commit": {
+    "author": "dev-ops",
+    "date": "2025-07-14T12:00:00+00:00",
+    "message": "Add quote summary lookup",
+    "sha": "64468dd1b0fdc999bb1843b8d2138b881f22b4c4",
+    "short": "64468dd1",
+    "subject": "Add quote summary lookup"
+   },
+   "message_signals": {
+    "adr_references": [],
+    "issue_references": [],
+    "migration_language": [],
+    "temporary_language": []
+   },
+   "present_at_head": true,
+   "reintroduced": false,
+   "relevant_commits_since_introduction": 1,
+   "rename_history_detected": false,
+   "snapshot_commit": "3a4d1d50",
+   "snapshot_date": "2026-01-09T12:00:00+00:00",
+   "source": "app/services/quote_service.py",
+   "target": "app/database/connection.py",
+   "timeline": [
+    {
+     "author": "dev-ops",
+     "change": "introduced",
+     "date": "2025-07-14T12:00:00+00:00",
+     "sha": "64468dd1b0fdc999bb1843b8d2138b881f22b4c4",
+     "short": "64468dd1",
+     "subject": "Add quote summary lookup"
+    }
+   ]
+  },
+  "finding_key": "R004|app/services/quote_service.py|app/database/connection.py",
+  "rule": {
+   "description": "Services must not access the database directly; go through a Repository.",
+   "id": "R004",
+   "name": "no-service-database",
+   "relation": "forbidden"
+  },
+  "snapshot_date": "2026-01-09T12:00:00+00:00",
+  "structural": {
+   "code_snippet": "   1: from app.database.connection import get_connection\n   2: from app.repositories.quote_repository import QuoteRepository\n   3: \n   4: \n   5: class QuoteService:",
+   "import": "app.database.connection.get_connection",
+   "line": 1,
+   "source": "app/services/quote_service.py",
+   "source_type": "service",
+   "target": "app/database/connection.py",
+   "target_type": "database"
+  }
+ },
+ "evolution_evidence": {
+  "age_days": 179,
+  "authors_since_introduction": [
+   "bob"
+  ],
+  "available": true,
+  "commits_examined": 5,
+  "commits_since_introduction": 9,
+  "first_introduced_at": "2025-07-14T12:00:00+00:00",
+  "history_truncated": false,
+  "introduced_at": "2025-07-14T12:00:00+00:00",
+  "introduced_with_file_creation": false,
+  "introducing_commit": {
+   "author": "dev-ops",
+   "date": "2025-07-14T12:00:00+00:00",
+   "message": "Add quote summary lookup",
+   "sha": "64468dd1b0fdc999bb1843b8d2138b881f22b4c4",
+   "short": "64468dd1",
+   "subject": "Add quote summary lookup"
+  },
+  "message_signals": {
+   "adr_references": [],
+   "issue_references": [],
+   "migration_language": [],
+   "temporary_language": []
+  },
+  "present_at_head": true,
+  "reintroduced": false,
+  "relevant_commits_since_introduction": 1,
+  "rename_history_detected": false,
+  "snapshot_commit": "3a4d1d50",
+  "snapshot_date": "2026-01-09T12:00:00+00:00",
+  "source": "app/services/quote_service.py",
+  "target": "app/database/connection.py",
+  "timeline": [
+   {
+    "author": "dev-ops",
+    "change": "introduced",
+    "date": "2025-07-14T12:00:00+00:00",
+    "sha": "64468dd1b0fdc999bb1843b8d2138b881f22b4c4",
+    "short": "64468dd1",
+    "subject": "Add quote summary lookup"
+   }
+  ]
+ },
+ "finding_id": "F006",
+ "semantic_analysis": {
+  "attempts": 1,
+  "cached": false,
+  "confidence": 0.7,
+  "error": null,
+  "evidence_used": [],
+  "explanation": "An active decision record permits this dependency.",
+  "latency_s": 0.0003543209999996577,
+  "mode": "review",
+  "model": "stub-model",
+  "parsed_ok": true,
+  "prompt_variant": "full",
+  "prompt_version": "v1",
+  "raw_text": "{\"verdict\": \"justified\", \"confidence\": 0.7, \"explanation\": \"An active decision record permits this dependency.\", \"evidence_used\": []}",
+  "tokens_estimated": true,
+  "tokens_used": {
+   "input": 841,
+   "output": 33
+  },
+  "verdict": "justified"
+ }
+}

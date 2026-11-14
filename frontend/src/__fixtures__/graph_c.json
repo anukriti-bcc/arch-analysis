@@ -1,0 +1,146 @@
+{
+ "edges": [
+  {
+   "dependency_type": "import",
+   "is_violation": false,
+   "source": "app/controllers/analytics_controller.py",
+   "source_component": "controller",
+   "target": "app/services/analytics_service.py",
+   "target_component": "service"
+  },
+  {
+   "dependency_type": "import",
+   "is_violation": false,
+   "source": "app/controllers/quote_controller.py",
+   "source_component": "controller",
+   "target": "app/services/quote_service.py",
+   "target_component": "service"
+  },
+  {
+   "dependency_type": "import",
+   "is_violation": false,
+   "source": "app/repositories/analytics_repository.py",
+   "source_component": "repository",
+   "target": "app/database/connection.py",
+   "target_component": "database"
+  },
+  {
+   "dependency_type": "import",
+   "is_violation": false,
+   "source": "app/repositories/quote_repository.py",
+   "source_component": "repository",
+   "target": "app/database/connection.py",
+   "target_component": "database"
+  },
+  {
+   "dependency_type": "import",
+   "is_violation": false,
+   "source": "app/services/analytics_service.py",
+   "source_component": "service",
+   "target": "app/repositories/analytics_repository.py",
+   "target_component": "repository"
+  },
+  {
+   "dependency_type": "import",
+   "is_violation": true,
+   "source": "app/services/quote_service.py",
+   "source_component": "service",
+   "target": "app/database/connection.py",
+   "target_component": "database"
+  },
+  {
+   "dependency_type": "import",
+   "is_violation": false,
+   "source": "app/services/quote_service.py",
+   "source_component": "service",
+   "target": "app/repositories/quote_repository.py",
+   "target_component": "repository"
+  }
+ ],
+ "nodes": [
+  {
+   "architectural_type": "unknown",
+   "id": "app/__init__.py",
+   "language": "python",
+   "name": "__init__.py",
+   "path": "app/__init__.py"
+  },
+  {
+   "architectural_type": "controller",
+   "id": "app/controllers/__init__.py",
+   "language": "python",
+   "name": "__init__.py",
+   "path": "app/controllers/__init__.py"
+  },
+  {
+   "architectural_type": "controller",
+   "id": "app/controllers/analytics_controller.py",
+   "language": "python",
+   "name": "analytics_controller.py",
+   "path": "app/controllers/analytics_controller.py"
+  },
+  {
+   "architectural_type": "controller",
+   "id": "app/controllers/quote_controller.py",
+   "language": "python",
+   "name": "quote_controller.py",
+   "path": "app/controllers/quote_controller.py"
+  },
+  {
+   "architectural_type": "database",
+   "id": "app/database/__init__.py",
+   "language": "python",
+   "name": "__init__.py",
+   "path": "app/database/__init__.py"
+  },
+  {
+   "architectural_type": "database",
+   "id": "app/database/connection.py",
+   "language": "python",
+   "name": "connection.py",
+   "path": "app/database/connection.py"
+  },
+  {
+   "architectural_type": "repository",
+   "id": "app/repositories/__init__.py",
+   "language": "python",
+   "name": "__init__.py",
+   "path": "app/repositories/__init__.py"
+  },
+  {
+   "architectural_type": "repository",
+   "id": "app/repositories/analytics_repository.py",
+   "language": "python",
+   "name": "analytics_repository.py",
+   "path": "app/repositories/analytics_repository.py"
+  },
+  {
+   "architectural_type": "repository",
+   "id": "app/repositories/quote_repository.py",
+   "language": "python",
+   "name": "quote_repository.py",
+   "path": "app/repositories/quote_repository.py"
+  },
+  {
+   "architectural_type": "service",
+   "id": "app/services/__init__.py",
+   "language": "python",
+   "name": "__init__.py",
+   "path": "app/services/__init__.py"
+  },
+  {
+   "architectural_type": "service",
+   "id": "app/services/analytics_service.py",
+   "language": "python",
+   "name": "analytics_service.py",
+   "path": "app/services/analytics_service.py"
+  },
+  {
+   "architectural_type": "service",
+   "id": "app/services/quote_service.py",
+   "language": "python",
+   "name": "quote_service.py",
+   "path": "app/services/quote_service.py"
+  }
+ ]
+}

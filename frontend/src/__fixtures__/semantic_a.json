@@ -1,0 +1,128 @@
+{
+ "analysis_id": "A0002",
+ "decision": {
+  "direct_verdict": "violation",
+  "escalate": false,
+  "final_verdict": "violation",
+  "forced": false,
+  "llm_called": false,
+  "outcome_source": "direct",
+  "reasons": [
+   "evidence sufficient: no relevant active intent and no ambiguity signal in history"
+  ]
+ },
+ "evidence": {
+  "adrs": [],
+  "evolution": {
+   "age_days": 160,
+   "authors_since_introduction": [
+    "alice",
+    "dev-ops"
+   ],
+   "available": true,
+   "commits_examined": 4,
+   "commits_since_introduction": 6,
+   "first_introduced_at": "2025-07-23T12:00:00+00:00",
+   "history_truncated": false,
+   "introduced_at": "2025-07-23T12:00:00+00:00",
+   "introduced_with_file_creation": false,
+   "introducing_commit": {
+    "author": "alice",
+    "date": "2025-07-23T12:00:00+00:00",
+    "message": "Add payment detail endpoint",
+    "sha": "00e2433a52def3e55ef5f612abf2d8eeb25fabc7",
+    "short": "00e2433a",
+    "subject": "Add payment detail endpoint"
+   },
+   "message_signals": {
+    "adr_references": [],
+    "issue_references": [],
+    "migration_language": [],
+    "temporary_language": []
+   },
+   "present_at_head": true,
+   "reintroduced": false,
+   "relevant_commits_since_introduction": 2,
+   "rename_history_detected": false,
+   "snapshot_commit": "9b082dc3",
+   "snapshot_date": "2025-12-30T12:00:00+00:00",
+   "source": "app/controllers/payment_controller.py",
+   "target": "app/repositories/payment_repository.py",
+   "timeline": [
+    {
+     "author": "alice",
+     "change": "introduced",
+     "date": "2025-07-23T12:00:00+00:00",
+     "sha": "00e2433a52def3e55ef5f612abf2d8eeb25fabc7",
+     "short": "00e2433a",
+     "subject": "Add payment detail endpoint"
+    }
+   ]
+  },
+  "finding_key": "R005|app/controllers/payment_controller.py|app/repositories/payment_repository.py",
+  "rule": {
+   "description": "Controllers must not skip the Service layer to call Repositories directly.",
+   "id": "R005",
+   "name": "no-controller-repository",
+   "relation": "forbidden"
+  },
+  "snapshot_date": "2025-12-30T12:00:00+00:00",
+  "structural": {
+   "code_snippet": "   1: from app.repositories.payment_repository import PaymentRepository\n   2: from app.services.payment_service import PaymentService\n   3: \n   4: \n   5: class PaymentController:",
+   "import": "app.repositories.payment_repository.PaymentRepository",
+   "line": 1,
+   "source": "app/controllers/payment_controller.py",
+   "source_type": "controller",
+   "target": "app/repositories/payment_repository.py",
+   "target_type": "repository"
+  }
+ },
+ "evolution_evidence": {
+  "age_days": 160,
+  "authors_since_introduction": [
+   "alice",
+   "dev-ops"
+  ],
+  "available": true,
+  "commits_examined": 4,
+  "commits_since_introduction": 6,
+  "first_introduced_at": "2025-07-23T12:00:00+00:00",
+  "history_truncated": false,
+  "introduced_at": "2025-07-23T12:00:00+00:00",
+  "introduced_with_file_creation": false,
+  "introducing_commit": {
+   "author": "alice",
+   "date": "2025-07-23T12:00:00+00:00",
+   "message": "Add payment detail endpoint",
+   "sha": "00e2433a52def3e55ef5f612abf2d8eeb25fabc7",
+   "short": "00e2433a",
+   "subject": "Add payment detail endpoint"
+  },
+  "message_signals": {
+   "adr_references": [],
+   "issue_references": [],
+   "migration_language": [],
+   "temporary_language": []
+  },
+  "present_at_head": true,
+  "reintroduced": false,
+  "relevant_commits_since_introduction": 2,
+  "rename_history_detected": false,
+  "snapshot_commit": "9b082dc3",
+  "snapshot_date": "2025-12-30T12:00:00+00:00",
+  "source": "app/controllers/payment_controller.py",
+  "target": "app/repositories/payment_repository.py",
+  "timeline": [
+   {
+    "author": "alice",
+    "change": "introduced",
+    "date": "2025-07-23T12:00:00+00:00",
+    "sha": "00e2433a52def3e55ef5f612abf2d8eeb25fabc7",
+    "short": "00e2433a",
+    "subject": "Add payment detail endpoint"
+   }
+  ]
+ },
+ "finding_id": "F001",
+ "semantic_analysis": null
+}
