@@ -46,6 +46,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 
 from experiments.benchmark.gitbuilder import GitBuilder
+from experiments.benchmark.hard_wording import HARD_ONLY_SCENARIOS, adr_content_hard
 
 SCENARIOS: dict[str, tuple[str, int]] = {
     "A_plain_violation": ("violation", 10),
@@ -303,10 +304,10 @@ def _file_content(kind: str, e: str, deps: list[str]) -> str:
 
 
 def build_case(root: str, case_id: str, scenario: str, seed: int, wording: str = "primary") -> dict:
-    if wording not in ("primary", "heldout"):
+    if wording not in ("primary", "heldout", "hard"):
         raise ValueError(f"unknown wording {wording!r}")
     rng = random.Random(f"{seed}:{case_id}")
-    label = SCENARIOS[scenario][0]
+    label = {**SCENARIOS, **HARD_ONLY_SCENARIOS}[scenario][0]
     pair_key = rng.choices(["service_database", "controller_repository", "controller_database"], weights=[6, 3, 1])[0]
     pair = PAIRS[pair_key]
     ents = rng.sample(ENTITIES, 3)
@@ -363,6 +364,10 @@ def build_case(root: str, case_id: str, scenario: str, seed: int, wording: str =
     principal = _adr_content(scenario, rng, f, pair, other, cutoff, adr_number)  # always drawn: keeps the rng stream identical
     if wording == "heldout" and principal is not None:
         principal = _adr_content_heldout(scenario, random.Random(f"{seed}:{case_id}:heldout"), f, pair, other, cutoff, adr_number)
+    if wording == "hard":
+        wr = random.Random(f"{seed}:{case_id}:hard")
+        hard = adr_content_hard(scenario, wr, f, pair, other, cutoff, adr_number, wr.choice(REASONS))
+        principal = hard if hard is not None else principal  # None = keep the primary wording (scenario K, a control)
     if principal is not None:
         title, status, context, decision, conseq = principal
         slug = title.lower().replace(" ", "-").replace("`", "")[:40]
@@ -449,7 +454,8 @@ def _filler(g: GitBuilder, rng: random.Random, d: date, path: str, e: str, i: in
 def generate_benchmark(out_dir: str, seed: int = 7, wording: str = "primary") -> dict:
     os.makedirs(out_dir, exist_ok=True)
     manifest = {"seed": seed, "wording": wording, "cases": []}
-    for scenario, (label, count) in SCENARIOS.items():
+    scenarios = {**SCENARIOS, **HARD_ONLY_SCENARIOS} if wording == "hard" else SCENARIOS
+    for scenario, (label, count) in scenarios.items():
         ids = [f"{scenario.split('_')[0]}{i + 1:02d}" for i in range(count)]
         order = list(range(count))
         random.Random(f"{seed}:split:{scenario}").shuffle(order)
@@ -471,8 +477,9 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser(description="Generate the controlled conformance benchmark.")
     ap.add_argument("--out", default="../datasets/benchmark/generated")
     ap.add_argument("--seed", type=int, default=7)
-    ap.add_argument("--wording", choices=["primary", "heldout"], default="primary",
-                    help="heldout = same repositories, ADR decision language rewritten (run once, on the frozen final evaluation)")
+    ap.add_argument("--wording", choices=["primary", "heldout", "hard"], default="primary",
+                    help="heldout = same repositories, ADR decision language rewritten (run once, on the frozen final evaluation); "
+                         "hard = harder-to-read ADRs plus two mixed-decision scenarios (see hard_wording.py)")
     args = ap.parse_args()
     m = generate_benchmark(args.out, args.seed, args.wording)
     by = {}

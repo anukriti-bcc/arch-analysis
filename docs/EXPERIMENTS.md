@@ -116,6 +116,7 @@ Each run also writes `paired_comparisons.csv` (M5 minus every other method, 95% 
 
 The scenarios and the ADR wording were written together, and the full system prompt mentions things such as grandfathering clauses and
 "temporary" commits that mirror them. A reader can fairly ask whether a method learned our phrasing or our hints.
+* `--wording hard` generates a harder-to-read tier (and two extra scenarios) so code-only readers and LLM methods can be told apart; see `docs/HARD_TIER.md`.
 * `--wording heldout` regenerates the **same repositories** (identical code, histories, dates and labels, verified in `tests/test_heldout_variants_ablation.py`) with the decision
   language rewritten and every primary key phrase avoided. A keyword matcher fails on it (also tested); a model that reads should not.
 * `--prompt-variant minimal` removes all scenario-specific guidance from the system prompts, leaving the task and the output format.
