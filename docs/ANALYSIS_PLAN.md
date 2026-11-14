@@ -85,7 +85,7 @@ comparison not listed above.
 
 **Data.** Every case of the hard tier at benchmark seed 7 has been seen, so it cannot confirm anything. M7 may be
 iterated on the dev split of seed 7 (prompt version `x1`, then `x2` ... each logged above with a date and a reason).
-When it is frozen (record the Git commit here: `________`), it is run **once** on three fresh seeds of the hard tier
+When it is frozen (prompt version `x2`; record the Git commit here: `________`), it is run **once** on three fresh seeds of the hard tier
 (11, 12, 13; 216 cases), pooled with `experiments.combine_runs` into split `confirm`. Model and prompt versions must
 match across the runs (the tool refuses to pool otherwise).
 
@@ -104,4 +104,6 @@ extraction is worse than free-form judgement elsewhere. Both would be reported a
 **Known limits, stated in advance.** Dates must be written as calendar dates in the ADR text (a relative limit such as
 "within 30 days of this record" is not handled and becomes a labelled fallback or is read as no limit). One model
 (Qwen2.5 7B, Q4). The hard tier is authored by us.
+| 2026-11-14 | **M7 dev run, prompt `x1`** (hard tier, seed 7, dev split, 38 cases): F1 0.963 vs M5 0.902; calls identical (30); 30/30 parsed, 0 fallbacks. Scenario D 3/3 (M5 0/3): the computed notes compare the extracted freeze date with the Git date correctly. Scenario J fell 0.67 to 0.33 (3 cases): for J01 and J03 the model extracted `covers_this_dependency: no`, judging scope from the ADR's description and ignoring that the introducing commit cites it. M5 also misses J03, so M5 and M7 differ on one case. | Dev inspection, as the protocol allows. |
+| 2026-11-14 | **M7 prompt `x1` -> `x2`**: one rule added to the scope field: an ADR cited by the introducing commit counts as covering the dependency, even when it describes the code by purpose rather than by file name; "no" is reserved for a decision that names or describes a different module or expressly excludes this one. EXTRACT_VERSION bumped. Changed after looking at 3 dev cases of one scenario, so dev cannot confirm it. | Fixes the J weakness found above. General evidence rule (a commit citation is evidence of coverage), but it mirrors scenario J, so the fresh seeds are the real test and the minimal-prompt critique applies. |
 

@@ -30,7 +30,7 @@ from analysis.evidence.aggregator import EvidenceBundle
 from analysis.semantic.llm_client import LLMClient
 from analysis.semantic.prompts import _render_adr
 
-EXTRACT_VERSION = "x1"
+EXTRACT_VERSION = "x2"
 
 DECISIONS = {"permits", "prohibits", "does_not_address"}
 COVERS = {"yes", "no", "unclear"}
@@ -47,8 +47,8 @@ An automated checker flagged one dependency as breaking a declared architectural
   An alternative that was rejected inside a decision that permits the access does not make the decision a prohibition.
   Ignore ADRs whose status is not active (superseded, rejected, deprecated).
 - "covers_this_dependency": does the decision apply to THIS source module?
-    "yes"     the source module is named, or described unambiguously as the same code;
-    "no"      the decision is about a different module, or this module is expressly excluded;
+    "yes"     the source module is named, or described unambiguously as the same code; or the introducing commit cites this ADR (see the history notes and the "Selected because" line). A decision that describes the code by its purpose rather than by file name still covers it when the commit cites it;
+    "no"      the decision names or describes a different module, or expressly excludes this one;
     "unclear" you cannot tell.
 - "limit": is the permission restricted to dependencies introduced within a time window?
     "none"                     no date limit;

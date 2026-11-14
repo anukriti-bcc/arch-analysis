@@ -164,3 +164,11 @@ def test_m7_escalates_exactly_what_m5_escalates(bench_cases):
         m7 = pipeline.run_extract_compute(ctx, client)
         assert [r["escalated"] for r in m5] == [r["escalated"] for r in m7], letter
         assert [r["policy_reasons"] for r in m5] == [r["policy_reasons"] for r in m7], letter
+
+
+def test_prompt_version_and_the_commit_citation_scope_rule():
+    """x2: an ADR cited by the introducing commit counts as covering the dependency (found on dev, scenario J)."""
+    from analysis.semantic.extract import EXTRACT_VERSION
+    assert EXTRACT_VERSION == "x2"
+    assert "introducing commit cites this ADR" in SYSTEM_EXTRACT and "purpose rather than by file name" in SYSTEM_EXTRACT
+    assert "names or describes a different module" in SYSTEM_EXTRACT  # the rule must not turn every ADR into 'covers'
