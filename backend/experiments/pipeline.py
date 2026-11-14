@@ -15,6 +15,11 @@ rules but is legitimate; reporting it as a violation is a false positive.
                        merely *calling the LLM less* explains M5's results.
   M5 evidence_guided   structural violations -> LLM only where the escalation
                        policy finds the evidence insufficient
+  M7 extract_compute   M5's escalation policy, unchanged; but an escalated finding that has an
+                       active relevant ADR is resolved by EXTRACT-THEN-COMPUTE: the LLM extracts
+                       facts (decision, scope, date limit) from the ADR without being given any
+                       date, and code compares the limit with the Git introduction date
+                       (analysis/semantic/extract.py). Same number of calls as M5.
   M6 deterministic_adr structural violations -> a CODE-ONLY reader of the same
                        evidence (ADR status, scope, decision cues, date clauses;
                        analysis/intent/reader.py). No LLM. Answers "why use an
@@ -45,7 +50,8 @@ from analysis.dependency.repository_scanner import scan_repository
 from analysis.evidence.aggregator import EvidenceAggregator, EvidenceBundle
 from analysis.evolution.git_evolution import GitEvolutionAnalyzer
 from analysis.intent.adr import load_adrs
-from analysis.intent.reader import decide_deterministic
+from analysis.intent.reader import decide_deterministic, introduction_date
+from analysis.semantic.extract import LLMExtractAnalyzer, resolve_extraction
 from analysis.policy.escalation import EvidenceGuidedPolicy
 from analysis.semantic.llm_analyzer import LLMEdgeAnalyzer, LLMSemanticAnalyzer
 from analysis.semantic.llm_client import LLMClient, LLMResponse
@@ -247,5 +253,50 @@ def run_deterministic_adr(ctx: CaseContext, method: str = "M6_deterministic_adr"
             r["outcome_source"] = "fallback" if d.outcome == "unclear" else "deterministic"
             r["policy_reasons"] = d.reason
         r["compute_s"] = time.perf_counter() - start
+        rows.append(r)
+    return rows
+
+
+def _apply_extraction(row: dict, result: dict, introduced) -> None:
+    row["llm_called"] = True
+    row["parsed_ok"], row["error"] = result["parsed_ok"], result["error"]
+    row["input_tokens"], row["output_tokens"] = result["tokens_used"]["input"], result["tokens_used"]["output"]
+    row["latency_s"], row["cached"], row["tokens_estimated"] = result["latency_s"], result["cached"], result["tokens_estimated"]
+    x = result["parsed"]
+    if x is None:  # unparseable: keep the structural verdict, say so
+        row["predicted_violation"], row["outcome_source"] = True, "fallback"
+        row["explanation"] = (result.get("raw_text") or "")[:300]
+        return
+    res = resolve_extraction(x, introduced)
+    row["predicted_violation"] = res.predicted_violation
+    row["outcome_source"] = "fallback" if res.outcome == "unresolved" else "llm_extract"
+    row["verdict"] = None if res.outcome == "unresolved" else res.outcome
+    row["explanation"] = x["explanation"]
+    row["extraction"] = json.dumps({**x, "limit_date": x["limit_date"].isoformat() if x["limit_date"] else None})
+    row["computed"] = res.note
+
+
+def run_extract_compute(ctx: CaseContext, client: TimedClient, *, method="M7_extract_compute", variant="full") -> list[dict]:
+    """M7. Escalation is exactly M5's. Resolution of an escalated finding:
+      * an active relevant ADR exists  -> LLM extracts facts, code computes the verdict
+      * none (history-only escalation) -> the ordinary review prompt, identical to M5 (so cached, no new call)."""
+    policy = EvidenceGuidedPolicy()
+    extractor = LLMExtractAnalyzer(client)
+    rows = []
+    for f in ctx.findings:
+        start, w0 = time.perf_counter(), client.wall
+        r = _row(ctx, method, f)
+        if f.status == FindingStatus.VIOLATION:
+            bundle = ctx.bundle(f, use_adrs=True, use_evolution=True)
+            decision = policy.decide(bundle)
+            r["policy_reasons"] = " | ".join(decision.reasons)
+            if not decision.escalate:
+                r["outcome_source"] = "direct"
+            elif any(m.adr.is_active for m in bundle.adrs):
+                r["escalated"] = True
+                _apply_extraction(r, extractor.extract(bundle), introduction_date(bundle.evolution))
+            else:
+                _review(ctx, client, r, f, use_adrs=True, use_evolution=True, variant=variant)
+        r["compute_s"] = max((time.perf_counter() - start) - (client.wall - w0), 0.0)
         rows.append(r)
     return rows

@@ -269,7 +269,8 @@ class DeterministicDecision:
     adr_id: Optional[str] = None
 
 
-def _intro_date(evolution: Optional[dict]) -> Optional[date]:
+def introduction_date(evolution: Optional[dict]) -> Optional[date]:
+    """Date the dependency was introduced, from the Git evolution evidence (None when unknown)."""
     if not evolution or not evolution.get("available"):
         return None
     raw = evolution.get("introduced_at")
@@ -292,10 +293,13 @@ def decide_deterministic(matches: list[ADRMatch], evolution: Optional[dict]) -> 
         why = "no relevant ADR" if not matches else "relevant ADRs are inactive or only weakly scoped"
         return DeterministicDecision(True, "violation", why)
     governing = max(strong, key=lambda m: (m.adr.date or date.min, m.adr.id))
-    reading = read_adr(governing.adr, _intro_date(evolution))
+    reading = read_adr(governing.adr, introduction_date(evolution))
     note = f"{governing.adr.id}: {reading.stance}; " + "; ".join(reading.notes)
     if reading.permitted is True:
         return DeterministicDecision(False, "justified", note, governing.adr.id)
     if reading.permitted is False:
         return DeterministicDecision(True, "violation", note, governing.adr.id)
     return DeterministicDecision(True, "unclear", note, governing.adr.id)
+
+
+_intro_date = introduction_date  # backwards-compatible alias

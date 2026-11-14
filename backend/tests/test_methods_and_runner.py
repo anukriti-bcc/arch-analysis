@@ -200,7 +200,10 @@ def test_runner_writes_paired_comparisons_and_density_sweep(mini_benchmark, tmp_
     main(["--benchmark", mini_benchmark, "--out", str(out), "--provider", "mock", "--seeds", "2", "--bootstrap", "40"])
     paired = pd.read_csv(out / "paired_comparisons.csv")
     assert {"M1_static", "M2_llm_only", "M3_full_hybrid", "A1_no_history", "A2_no_intent"} <= set(paired["b"].str.split("+").str[0]) | set(paired["b"])
-    assert {"f1", "llm_calls"} <= set(paired["metric"]) and (paired["a"] == "M5_evidence_guided").all()
+    assert {"f1", "llm_calls"} <= set(paired["metric"])
+    assert set(paired["a"]) == {"M5_evidence_guided", "M7_extract_compute"}  # M7 minus M5 is the clean test of extract-then-compute
+    assert ((paired["a"] == "M7_extract_compute") & (paired["b"] == "M5_evidence_guided")).any()
+    assert not ((paired["a"] == "M5_evidence_guided") & (paired["b"] == "M7_extract_compute")).any()  # no duplicate in the other direction
     density = pd.read_csv(out / "density_sweep.csv")
     assert {0.1, 1.0} <= set(density["adr_density"]) and "calls_saved_vs_m3" in density.columns
     text = (out / "summary.md").read_text()

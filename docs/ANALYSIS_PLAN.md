@@ -78,3 +78,30 @@ comparison not listed above.
 | 2026-11-14 | Added baseline **M6 `deterministic_adr`** (`analysis/intent/reader.py`): a code-only reader of the same evidence M5 sees (ADR status, scope strength, Decision-section cues, date clauses compared in code). Added metrics **capture rate / escalation yield / calls over oracle** and a capture-curve helper (`experiments/metrics.py`). | An examiner can ask why an LLM is needed at all; M6 is the strongest no-LLM baseline on the same evidence. The new metrics measure how well a policy chooses *which* findings to escalate, which hit/miss F1 alone cannot show. |
 | 2026-11-14 | **Provenance of M6 (read before interpreting it).** M6 was written after the authors had seen sample ADR texts of the *primary* wording, and was debugged against the **dev** split only (one fix: an "introduced after D is NOT covered" sentence was misread as a plain prohibition). It was NOT run on the primary test split or on held-out wording. M6's primary-wording results are therefore optimistic by construction and are **not independent evidence**. M6 is frozen at the commit that contains this row; its held-out-wording run is the fair test. | The reader was designed from general ADR conventions (Nygard/MADR sections, several date formats), not from the held-out phrasing, which was deliberately not read while writing it. |
 | 2026-11-14 | Added a **hard wording tier** (`--wording hard`, `experiments/benchmark/hard_wording.py`, `docs/HARD_TIER.md`): same labels and repositories, harder-to-read ADRs, plus two scenarios (L, M) that exist only in this tier. M6 was run once on it, frozen, with no LLM (F1 0.61 dev / 0.56 test; exploratory). | The primary wording is fully readable by code (M6 F1 = 1.0 on dev), so it cannot show where an LLM is needed. **Provenance:** the tier was written knowing M6's lexicon, so M6's failures there are partly by construction; it is an exploratory tier, not a blind test. The held-out wording stays the blind test. |
+| 2026-11-14 | Hard-tier LLM run executed and inspected (`results/hard_tier_qwen7b`, M2 in `..._m2`). Finding: every LLM method scored 0 of 6 on scenario D (after-cutoff grandfathering): the model read the ADR and then invented the date comparison. | Exploratory by definition: the hard tier was designed and inspected before this run's analysis. Motivates M7. |
+| 2026-11-14 | Added **M7 `extract_compute`** (`analysis/semantic/extract.py`, prompt version `x1`): the LLM extracts decision, scope and date limit from the ADR without being shown any date; code compares the limit with the Git introduction date. Escalation policy is M5's, unchanged; same number of calls. History-only escalations (no active ADR) use M5's review prompt. Not run on any model yet at the time of this entry. | The D failure above. One change at a time, so that M7 minus M5 isolates it. |
+
+## M7 confirmation protocol (written 2026-11-14, before any M7 result exists)
+
+**Data.** Every case of the hard tier at benchmark seed 7 has been seen, so it cannot confirm anything. M7 may be
+iterated on the dev split of seed 7 (prompt version `x1`, then `x2` ... each logged above with a date and a reason).
+When it is frozen (record the Git commit here: `________`), it is run **once** on three fresh seeds of the hard tier
+(11, 12, 13; 216 cases), pooled with `experiments.combine_runs` into split `confirm`. Model and prompt versions must
+match across the runs (the tool refuses to pool otherwise).
+
+**Criteria, fixed now** (all computed on the pooled `confirm` split; outcome reported whatever it is):
+
+* **C1 (the point of M7).** Accuracy on scenario D, pooled over the three seeds, is at least 80% (M5 scored 0%).
+* **C2 (net effect).** Paired F1, M7 minus M5: the 95% interval's lower bound is above 0.
+* **C3 (no new cost).** M7's LLM calls are at most 5% above M5's.
+* **C4 (no regression).** Accuracy on the non-D targeted scenarios, pooled, is within 0.05 of M5's.
+* **C5 (extraction is reliable).** Labelled fallbacks (unparseable reply, unclear scope, limit without a date) are at most 10%
+  of M7's escalations.
+
+**What would count against M7:** C1 failing means the model cannot extract a date from this wording; C4 failing means
+extraction is worse than free-form judgement elsewhere. Both would be reported as findings.
+
+**Known limits, stated in advance.** Dates must be written as calendar dates in the ADR text (a relative limit such as
+"within 30 days of this record" is not handled and becomes a labelled fallback or is read as no limit). One model
+(Qwen2.5 7B, Q4). The hard tier is authored by us.
+

@@ -31,7 +31,7 @@ from analysis.semantic.prompts import PROMPT_VERSION
 from experiments import metrics, pipeline
 from experiments.mock_llm import mock_model
 
-ALL_METHODS = ["static", "llm_only", "full_hybrid", "generic_selective", "evidence_guided", "no_history", "no_intent", "deterministic_adr"]
+ALL_METHODS = ["static", "llm_only", "full_hybrid", "generic_selective", "evidence_guided", "no_history", "no_intent", "deterministic_adr", "extract_compute"]
 
 
 class BudgetExceeded(RuntimeError):
@@ -96,6 +96,10 @@ def build_paired_comparisons(preds: pd.DataFrame, splits: list[str], n_boot: int
     if m4:
         others.append(m4)
     frames = [metrics.paired_bootstrap(preds, sp, [m5], b, n_boot) for sp in splits for b in others]
+    m7 = "M7_extract_compute"
+    if m7 in methods:  # M7 minus M5 is the clean test of extract-then-compute (same escalation policy)
+        frames += [metrics.paired_bootstrap(preds, sp, [m7], [b], n_boot) for sp in splits
+                   for b in (m5, "M3_full_hybrid", "M6_deterministic_adr", "M1_static") if b in methods]
     frames = [f for f in frames if not f.empty]
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
@@ -166,6 +170,8 @@ def main(argv=None) -> int:
             for c in contexts: m5_rows += pipeline.run_evidence_guided(c, client, variant=args.prompt_variant)
             if "evidence_guided" in wanted:
                 rows += m5_rows
+        if "extract_compute" in wanted:
+            for c in contexts: rows += pipeline.run_extract_compute(c, client, variant=args.prompt_variant)
         if "no_history" in wanted:
             for c in contexts: rows += pipeline.run_evidence_guided(c, client, method="A1_no_history", use_history=False, variant=args.prompt_variant)
         if "no_intent" in wanted:
@@ -234,8 +240,9 @@ def main(argv=None) -> int:
             f.write(f"## Split: {split}\n\n{fmt_table(headline[headline['split'] == split], cols)}\n\n")
         if not paired.empty:
             keep = paired[paired["metric"].isin(["f1", "false_positive_rate", "llm_calls"])]
-            f.write("## Paired comparison: M5 minus each other method (95% case-level bootstrap)\n\n")
-            f.write(fmt_table(keep, ["split", "b", "metric", "a_value", "b_value", "delta", "ci_low", "ci_high"]) + "\n\n")
+            f.write("## Paired comparison: a minus b (95% case-level bootstrap)\n\n"
+                    "M5 against every other method; M7 against M5, M3, M6 and M1 (M7 minus M5 is the clean test of extract-then-compute).\n\n")
+            f.write(fmt_table(keep, ["split", "a", "b", "metric", "a_value", "b_value", "delta", "ci_low", "ci_high"]) + "\n\n")
         if not capture.empty:
             f.write("## Escalation quality: which findings were sent to the LLM\n\n"
                     "A static false positive is a structural violation the benchmark labels justified. `capture_rate` is the share of "

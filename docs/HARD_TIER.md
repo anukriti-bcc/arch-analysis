@@ -44,6 +44,39 @@ M6 overall on this tier: F1 0.61 (dev), 0.56 (test), against 1.0 on the primary 
   how the LLM methods do on the same cases, not the size of M6's drop.
 * The **held-out wording** remains the blind test. M6 was frozen before it and has not been run on it.
 
+## LLM results (Qwen2.5 7B Q4_K_M, benchmark seed 7; exploratory)
+
+Run on Kaggle; files in `results/hard_tier_qwen7b` (core methods) and `results/hard_tier_qwen7b_m2`. 465 of 465 calls parsed, no errors. Test split, 34 cases:
+
+| Method | F1 | LLM calls |
+|---|---|---|
+| M1 static | 0.786 | 0 |
+| M6 code-only reader | 0.564 | 0 |
+| M3 full hybrid | 0.872 | 34 |
+| **M5 evidence-guided** | **0.900** | **27** |
+| M2 LLM-only | 0.184 | 238 |
+
+Paired (test): M5 minus M6 = +0.336 (95% CI 0.183 to 0.518); M5 minus M3 = +0.028 (0.000 to 0.095) with 7 fewer calls (-12 to -3); M5 minus A1 (no history) = +0.090 (0.020 to 0.190).
+
+Accuracy on the targeted dependency, dev and test pooled:
+
+| Scenario | M6 | M3 | M5 | A1 (no history) |
+|---|---|---|---|---|
+| A plain | 1.00 | 1.00 | 1.00 | 1.00 |
+| B permanent exception | 0.00 | 1.00 | 1.00 | 1.00 |
+| C grandfathered, before cut-off | 1.00 | 1.00 | 1.00 | 1.00 |
+| **D grandfathered, after cut-off** | 0.00 | **0.00** | **0.00** | **0.00** |
+| E negated proposal | 0.00 | 1.00 | 1.00 | 1.00 |
+| F superseded | 1.00 | 0.60 | 1.00 | 1.00 |
+| G passing mention | 0.00 | 1.00 | 1.00 | 1.00 |
+| H temporary commit | 1.00 | 1.00 | 1.00 | 1.00 |
+| J cited by commit only | 0.00 | 0.83 | 0.83 | 0.00 |
+| K scope mismatch | 1.00 | 1.00 | 1.00 | 1.00 |
+| L mixed, target permitted | 1.00 | 0.83 | 0.83 | 0.83 |
+| M mixed, target prohibited | 0.00 | 0.83 | 0.83 | 0.67 |
+
+Reading: (1) paraphrased ADRs need a language model (B, E, G, M); (2) history evidence is what links a commit-cited ADR (J); (3) a code status check beats the model on superseded records (F); (4) **the model cannot compare dates**: for D it wrote that the dependency was introduced before the freeze when it was introduced after. M7 (`docs/ANALYSIS_PLAN.md`, confirmation protocol) targets this.
+
 ## Still to run (needs the model; roughly 125 new calls for the core methods)
 
     python -m experiments.benchmark.generate --out ../datasets/benchmark/generated_hard --wording hard
