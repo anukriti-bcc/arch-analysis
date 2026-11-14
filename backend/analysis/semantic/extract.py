@@ -6,15 +6,19 @@ read the ADR correctly and then invented the date comparison ("introduced before
 
 The fix is a division of labour, not a better prompt:
 
-    LLM   reads the record and EXTRACTS facts it is good at: does the decision permit or prohibit,
-          does it cover THIS module, and is the permission limited to dependencies introduced within a
-          time window (the limit's kind and calendar date, copied from the text).
+    LLM   reads the record and EXTRACTS facts it is good at: what does the decision say about THIS
+          module (permit, prohibit, not addressed), and is the permission limited to dependencies
+          introduced within a time window (the limit's kind and calendar date, copied from the text).
     CODE  COMPUTES the verdict: it compares the introduction date (from Git) with the extracted limit.
 
 The prompt therefore deliberately withholds the introduction date, the snapshot date and the dependency's
 age, so the model has nothing to do arithmetic with. Everything the model is asked is a reading task.
 
-Failure handling is explicit and conservative: an unparseable reply, an unclear scope, a stated limit with
+Two design lessons from development (docs/ANALYSIS_PLAN.md, prompt x1 -> x3): the ADR's own date must never be
+shown to the model (it was mistaken for a limit), and "does the ADR permit?" and "does it cover this module?"
+must be ONE question about this module (mixed ADRs name a module they forbid).
+
+Failure handling is explicit and conservative: an unparseable reply, an unclear decision, a stated limit with
 no usable date, or an unknown introduction date all leave the structural verdict (violation) in place and
 are labelled `fallback`, never guessed.
 """
@@ -28,37 +32,53 @@ from typing import Any, Optional
 
 from analysis.evidence.aggregator import EvidenceBundle
 from analysis.semantic.llm_client import LLMClient
-from analysis.semantic.prompts import _render_adr
+from analysis.semantic.prompts import MAX_ADR_CHARS, _clip
 
-EXTRACT_VERSION = "x2"
+EXTRACT_VERSION = "x3"
 
-DECISIONS = {"permits", "prohibits", "does_not_address"}
-COVERS = {"yes", "no", "unclear"}
+DECISIONS = {"permits", "prohibits", "does_not_address", "unclear"}
 LIMITS = {"none", "introduced_on_or_before", "introduced_before", "introduced_after"}
 
 SYSTEM_EXTRACT = """You read architecture decision records (ADRs) and report facts from them. You do NOT decide whether the dependency is a violation, and you must NOT compare dates or do any date arithmetic: other software does that.
 
-An automated checker flagged one dependency as breaking a declared architectural rule. Read the ADR(s) provided and report:
+An automated checker flagged one dependency: the SOURCE module named in the prompt uses the TARGET module directly, which a declared rule forbids. Read the ADR(s) provided and report what they say about THIS source module's use of the target:
 
-- "decision": what the ADR's decision says about this kind of access.
-    "permits"          the decision allows, accepts or tolerates it (including as an accepted trade-off or exception);
-    "prohibits"        the decision forbids it, rejects it, or declines to approve it;
-    "does_not_address" the ADR is about something else.
-  An alternative that was rejected inside a decision that permits the access does not make the decision a prohibition.
-  Ignore ADRs whose status is not active (superseded, rejected, deprecated).
-- "covers_this_dependency": does the decision apply to THIS source module?
-    "yes"     the source module is named, or described unambiguously as the same code; or the introducing commit cites this ADR (see the history notes and the "Selected because" line). A decision that describes the code by its purpose rather than by file name still covers it when the commit cites it;
-    "no"      the decision names or describes a different module, or expressly excludes this one;
-    "unclear" you cannot tell.
-- "limit": is the permission restricted to dependencies introduced within a time window?
+- "decision": what the ADR decides about THIS source module, not about modules in general.
+    "permits"          the decision allows, accepts or tolerates this module's access (including as an accepted trade-off or exception);
+    "prohibits"        the decision forbids it for this module, rejects it, or declines to approve it;
+    "does_not_address" the ADR is about other modules or other matters and says nothing about this module's access;
+    "unclear"          you cannot tell.
+  Many ADRs decide differently for different modules, for example permitting one and requiring another to keep going through the proper layer. Answer only for THIS source module: being named in an ADR does not mean the access is permitted for it.
+  The ADR concerns this module if it names the module, or if it describes the code by its purpose and the introducing commit cites this ADR (see the history notes and the "Selected because" line).
+  An alternative that was rejected inside a decision that permits the access does not make the decision a prohibition. Ignore ADRs whose status is not active (superseded, rejected, deprecated).
+- "limit": is the permission for this module restricted to dependencies introduced within a time window?
     "none"                     no date limit;
     "introduced_on_or_before"  permitted only for code introduced up to and including a date;
     "introduced_before"        permitted only for code introduced strictly before a date;
     "introduced_after"         permitted only for code introduced after a date.
-- "limit_date": the calendar date of that limit as written in the decision text, converted to YYYY-MM-DD, or null. Copy the date; never calculate one. If the limit is not a specific calendar date (for example "until the migration completes"), use limit "none" and null.
+- "limit_date": the calendar date of that limit as written in a sentence of the decision, converted to YYYY-MM-DD, or null. Copy the date; never calculate one. If the limit is not a specific calendar date (for example "until the migration completes"), use limit "none" and null.
 
 Respond with ONLY one JSON object, no other text:
-{"adr_id": "<id of the ADR you relied on, or null>", "decision": "permits" | "prohibits" | "does_not_address", "covers_this_dependency": "yes" | "no" | "unclear", "limit": "none" | "introduced_on_or_before" | "introduced_before" | "introduced_after", "limit_date": "YYYY-MM-DD" | null, "explanation": "<at most two sentences>"}"""
+{"adr_id": "<id of the ADR you relied on, or null>", "decision": "permits" | "prohibits" | "does_not_address" | "unclear", "limit": "none" | "introduced_on_or_before" | "introduced_before" | "introduced_after", "limit_date": "YYYY-MM-DD" | null, "explanation": "<at most two sentences>"}"""
+
+
+_META_DATE = re.compile(r"^\s*(?:[-*]\s*)?\**(?:date|created|updated|last[ _]modified)\**\s*[:=].*$", re.I)
+
+
+def strip_adr_dates(text: str) -> str:
+    """Remove the ADR's own metadata dates (front-matter and 'Date:' lines). They describe when the record was
+    written, not a limit on the decision, and a small model readily mistakes one for the other. Dates inside the
+    decision's sentences are untouched."""
+    return "\n".join(line for line in text.split("\n") if not _META_DATE.match(line))
+
+
+def render_adr_for_extraction(adr, reasons=None) -> str:
+    meta = [f"Title: {adr.title}", f"Status (parsed): {adr.status}"]
+    if adr.status_raw and adr.status_raw.lower() != adr.status:
+        meta[-1] += f"  (as written: {adr.status_raw})"
+    if reasons:
+        meta.append(f"Selected because: {', '.join(reasons)}")
+    return f'<adr id="{adr.id}">\n' + "\n".join(meta) + "\n\n" + _clip(strip_adr_dates(adr.text).strip(), MAX_ADR_CHARS) + "\n</adr>"
 
 
 def render_history_undated(evolution: dict | None) -> str:
@@ -96,7 +116,7 @@ def render_extract_prompt(bundle: EvidenceBundle) -> str:
         "",
         "## Architecture decision records possibly relevant to this dependency",
     ]
-    parts += [_render_adr(m.adr, m.reasons) for m in bundle.adrs] if bundle.adrs else ["None found."]
+    parts += [render_adr_for_extraction(m.adr, m.reasons) for m in bundle.adrs] if bundle.adrs else ["None found."]
     parts += ["", "## Notes from version-control history (no dates are given on purpose)",
               render_history_undated(bundle.evolution),
               "", "Report the facts as the JSON object only."]
@@ -147,13 +167,13 @@ def parse_extraction_json(text: str) -> dict | None:
             continue
         if not isinstance(obj, dict):
             continue
-        decision, covers, limit = _norm(obj.get("decision", "")), _norm(obj.get("covers_this_dependency", "")), _norm(obj.get("limit", "none") or "none")
-        if decision not in DECISIONS or covers not in COVERS or limit not in LIMITS:
+        decision, limit = _norm(obj.get("decision", "")), _norm(obj.get("limit", "none") or "none")
+        if decision not in DECISIONS or limit not in LIMITS:
             continue
         adr_id = obj.get("adr_id")
         return {
             "adr_id": None if adr_id in (None, "", "null") else str(adr_id),
-            "decision": decision, "covers_this_dependency": covers, "limit": limit,
+            "decision": decision, "limit": limit,
             "limit_date": _iso_date(obj.get("limit_date")),
             "explanation": str(obj.get("explanation", "")).strip(),
         }
@@ -174,12 +194,10 @@ class Resolution:
 
 def resolve_extraction(x: dict, introduced: Optional[date]) -> Resolution:
     """Turn extracted facts plus the Git introduction date into a verdict. No model involved."""
+    if x["decision"] == "unclear":
+        return Resolution("unresolved", "decision about this module unclear")
     if x["decision"] != "permits":
-        return Resolution("violation", f"decision {x['decision']}")
-    if x["covers_this_dependency"] == "no":
-        return Resolution("violation", "permits, but not for this module")
-    if x["covers_this_dependency"] == "unclear":
-        return Resolution("unresolved", "permits, but scope unclear")
+        return Resolution("violation", f"decision {x['decision']} for this module")
     if x["limit"] == "none":
         return Resolution("justified", "permits this module, no date limit")
     limit_date: Optional[date] = x["limit_date"]
