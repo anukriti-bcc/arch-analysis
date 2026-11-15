@@ -16,7 +16,8 @@ from experiments import pipeline
 
 
 def x(**kw):
-    base = {"adr_id": "ADR-1", "decision": "permits", "limit": "none", "limit_date": None, "explanation": ""}
+    base = {"adr_id": "ADR-1", "decision": "permits", "covers_this_dependency": "yes", "limit": "none",
+            "limit_date": None, "explanation": ""}
     return {**base, **kw}
 
 
@@ -26,25 +27,25 @@ D = date(2025, 9, 13)
 # ---------------------------------------------------------------- parsing
 
 def test_parses_clean_fenced_and_chatty_replies():
-    obj = {"adr_id": "ADR-7", "decision": "permits", "limit": "introduced_on_or_before", "limit_date": "2025-09-13",
-           "explanation": "ok"}
+    obj = {"adr_id": "ADR-7", "decision": "permits", "covers_this_dependency": "yes",
+           "limit": "introduced_on_or_before", "limit_date": "2025-09-13", "explanation": "ok"}
     for text in (json.dumps(obj), f"```json\n{json.dumps(obj)}\n```", f"Sure! {json.dumps(obj)} Hope that helps."):
         got = parse_extraction_json(text)
         assert got["limit_date"] == D and got["limit"] == "introduced_on_or_before" and got["adr_id"] == "ADR-7"
 
 
 def test_normalises_enumerations_and_rejects_invalid_ones():
-    ok = parse_extraction_json('{"decision": "Does Not Address", "limit": "none"}')
-    assert ok["decision"] == "does_not_address" and ok["limit_date"] is None
-    assert parse_extraction_json('{"decision": "unclear", "limit": "none"}')["decision"] == "unclear"
-    assert parse_extraction_json('{"decision": "maybe", "limit": "none"}') is None
+    ok = parse_extraction_json('{"decision": "Does Not Address", "covers_this_dependency": "NO", "limit": "none"}')
+    assert ok["decision"] == "does_not_address" and ok["covers_this_dependency"] == "no" and ok["limit_date"] is None
+    assert parse_extraction_json('{"decision": "maybe", "covers_this_dependency": "yes", "limit": "none"}') is None
     assert parse_extraction_json('{"verdict": "violation"}') is None  # a review-style reply is not an extraction
     assert parse_extraction_json("") is None and parse_extraction_json("no json here") is None
 
 
 def test_unusable_dates_become_none_not_errors():
     for bad in ("not a date", "2025-13-45", None, ""):
-        got = parse_extraction_json(json.dumps({"decision": "permits", "limit": "introduced_before", "limit_date": bad}))
+        got = parse_extraction_json(json.dumps({"decision": "permits", "covers_this_dependency": "yes",
+                                                "limit": "introduced_before", "limit_date": bad}))
         assert got["limit_date"] is None
 
 
@@ -67,7 +68,8 @@ def test_decision_and_scope_rules():
     assert resolve_extraction(x(), None).outcome == "justified"
     assert resolve_extraction(x(decision="prohibits"), None).outcome == "violation"
     assert resolve_extraction(x(decision="does_not_address"), None).outcome == "violation"
-    assert resolve_extraction(x(decision="unclear"), None).outcome == "unresolved"
+    assert resolve_extraction(x(covers_this_dependency="no"), None).outcome == "violation"
+    assert resolve_extraction(x(covers_this_dependency="unclear"), None).outcome == "unresolved"
 
 
 def test_missing_facts_are_unresolved_never_guessed():
@@ -99,7 +101,7 @@ def fake_extractor(claim_dates_wrongly=False):
             return json.dumps({"verdict": "violation", "confidence": 0.9, "explanation": "review", "evidence_used": []})
         m = re.search(r"on or before (\d{4}-\d{2}-\d{2})", prompt)
         return json.dumps({
-            "adr_id": "ADR", "decision": "permits",
+            "adr_id": "ADR", "decision": "permits", "covers_this_dependency": "yes",
             "limit": "introduced_on_or_before" if m else "none", "limit_date": m.group(1) if m else None,
             "explanation": "The dependency was introduced before the freeze, so it is covered." if claim_dates_wrongly else "ok"})
     return pipeline.TimedClient(FunctionClient(fn, "fake"))
@@ -148,8 +150,8 @@ def test_unparseable_reply_falls_back_to_the_structural_verdict_and_is_labelled(
     assert r["predicted_violation"] is True and r["outcome_source"] == "fallback" and r["parsed_ok"] is False
 
 
-def test_unclear_decision_is_a_labelled_fallback(bench_cases):
-    fn = lambda s, p: json.dumps({"decision": "unclear", "limit": "none"})
+def test_unclear_scope_is_a_labelled_fallback(bench_cases):
+    fn = lambda s, p: json.dumps({"decision": "permits", "covers_this_dependency": "unclear", "limit": "none"})
     r = target(pipeline.run_extract_compute(bench_cases["B"], pipeline.TimedClient(FunctionClient(fn, "unclear"))))
     assert r["predicted_violation"] is True and r["outcome_source"] == "fallback" and r["verdict"] is None
 
@@ -164,38 +166,101 @@ def test_m7_escalates_exactly_what_m5_escalates(bench_cases):
         assert [r["policy_reasons"] for r in m5] == [r["policy_reasons"] for r in m7], letter
 
 
-def test_prompt_version_and_the_single_question_about_this_module():
-    """x3: ONE question about THIS module (mixed ADRs name modules they forbid), commit citation counts, ADR date is not a limit."""
+def test_prompt_version_and_the_commit_citation_scope_rule():
+    """x2: an ADR cited by the introducing commit counts as covering the dependency (found on dev, scenario J)."""
     from analysis.semantic.extract import EXTRACT_VERSION
-    assert EXTRACT_VERSION == "x3"
-    assert "THIS source module" in SYSTEM_EXTRACT and "being named in an ADR does not mean the access is permitted" in SYSTEM_EXTRACT
-    assert "the introducing commit cites this ADR" in SYSTEM_EXTRACT
-    assert "covers_this_dependency" not in SYSTEM_EXTRACT
+    assert EXTRACT_VERSION.startswith("x4")  # x4 = the x2 prompt + code-side grounding
+    assert "introducing commit cites this ADR" in SYSTEM_EXTRACT and "purpose rather than by file name" in SYSTEM_EXTRACT
+    assert "names or describes a different module" in SYSTEM_EXTRACT  # the rule must not turn every ADR into 'covers'
 
 
-def test_the_adrs_own_date_never_reaches_the_extraction_prompt(bench_cases):
-    """Development finding: a model reported the ADR's header date as a limit ('introduced on or before <ADR date>')."""
-    ctx = bench_cases["C"]
+# ---------------------------------------------------------------- grounding (x4)
+
+from analysis.semantic.extract import decision_dates, ground_limit, strip_adr_dates  # noqa: E402
+from experiments.benchmark.generate import build_case  # noqa: E402
+
+
+def adr_obj(text, date_=date(2025, 5, 20), adr_id="ADR-1"):
+    from analysis.intent.adr import ADR, ADRMatch
+    return ADRMatch(ADR(adr_id, "t", "accepted", "", date_, "a.md", text), ("file_names",))
+
+
+def lim(d, adr_id="ADR-1", kind="introduced_on_or_before"):
+    return x(adr_id=adr_id, limit=kind, limit_date=d)
+
+
+def test_a_limit_date_written_in_the_decision_is_accepted():
+    m = adr_obj("---\ndate: 2025-05-20\n---\n## Decision\n\nAllowed for code introduced on or before 13 September 2025.")
+    out = ground_limit(lim(date(2025, 9, 13)), [m])
+    assert out["limit"] == "introduced_on_or_before" and out["limit_date"] == date(2025, 9, 13) and out["grounding"] == "accepted"
+
+
+def test_the_records_own_date_is_rejected_as_a_limit():
+    """Development finding: 6 of 6 failing mixed-decision cases had the model report the ADR's header date as a limit."""
+    m = adr_obj("---\ndate: 2025-05-20\n---\n## Decision\n\n`a` may use `b` directly. `c` must keep going through the layer.")
+    out = ground_limit(lim(date(2025, 5, 20)), [m])
+    assert out["limit"] == "none" and out["limit_date"] is None and "record date" in out["grounding"]
+    assert resolve_extraction(out, date(2025, 7, 1)).outcome == "justified"  # no limit left, so the permission stands
+
+
+def test_a_date_not_in_the_decision_is_replaced_by_its_only_date_or_left_unresolved():
+    one = adr_obj("## Decision\n\nAllowed up to 2025-09-13.")
+    out = ground_limit(lim(date(2025, 9, 30)), [one])  # e.g. the model converted 'end of September' itself
+    assert out["limit_date"] == date(2025, 9, 13) and out["grounding"].startswith("replaced")
+    many = adr_obj("## Decision\n\nAllowed up to 2025-09-13. Review on 2025-12-01.")
+    out = ground_limit(lim(date(2025, 9, 30)), [many])
+    assert out["limit_date"] is None and out["grounding"].startswith("unresolved")
+    assert resolve_extraction(out, date(2025, 1, 1)).outcome == "unresolved"
+    none = adr_obj("## Decision\n\nAllowed for now.")
+    assert ground_limit(lim(date(2025, 9, 30)), [none])["limit_date"] is None
+
+
+def test_no_limit_claimed_is_left_alone_and_adr_id_selects_the_record():
+    assert ground_limit(x(), [adr_obj("## Decision\n\nAllowed.")])["grounding"] == "no limit claimed"
+    a = adr_obj("## Decision\n\nAllowed through 2025-01-01.", adr_id="ADR-1")
+    b = adr_obj("## Decision\n\nAllowed through 2025-02-02.", adr_id="ADR-2")
+    assert ground_limit(lim(date(2025, 2, 2), adr_id="ADR-2"), [a, b])["grounding"] == "accepted"
+    assert ground_limit(lim(date(2025, 2, 2), adr_id="ADR-1"), [a, b])["limit_date"] == date(2025, 1, 1)
+
+
+def test_metadata_dates_are_not_decision_dates():
+    text = "---\nid: A\ndate: 2025-01-02\n---\n# T\n\nDate: 2025-01-02\n\n## Decision\n\nAllowed up to 2025-09-13."
+    assert "2025-01-02" not in strip_adr_dates(text)
+    assert decision_dates(adr_obj(text).adr) == {date(2025, 9, 13)}
+    no_heading = adr_obj("Date: 2025-01-02\n\nPlain text without a decision heading.")
+    assert decision_dates(no_heading.adr) == set()  # header date still excluded when no Decision section is found
+
+
+# The six real extractions that failed under prompt x2 (hard tier, development seeds 21 and 22). The model read each ADR
+# correctly, then wrote the record date as `introduced_on_or_before`. With grounding, all six resolve as justified.
+X2_L_FAILURES = [(21, "L02", "ADR-016", "2025-05-20"), (21, "L04", "ADR-017", "2025-06-22"), (21, "L06", "ADR-005", "2025-06-10"),
+                 (22, "L01", "ADR-029", "2025-07-14"), (22, "L02", "ADR-015", "2025-06-24"), (22, "L03", "ADR-023", "2025-07-05")]
+
+
+@pytest.mark.parametrize("seed,cid,adr_id,limit_date", X2_L_FAILURES)
+def test_the_six_real_x2_mixed_decision_failures_are_fixed_by_grounding(tmp_path, seed, cid, adr_id, limit_date):
+    build_case(str(tmp_path), cid, "L_adr_mixed_permits_target", seed, wording="hard")
+    ctx = pipeline.CaseContext(str(tmp_path), {"case_id": cid, "scenario": "L_adr_mixed_permits_target", "split": "dev", "path": cid})
     f = next(f for f in ctx.findings if ctx.truth[ctx.edge(f)] != "conformant")
     bundle = ctx.bundle(f)
-    prompt = render_extract_prompt(bundle)
-    for m in bundle.adrs:
-        assert m.adr.date.isoformat() in m.adr.text  # the date IS in the raw record ...
-        assert m.adr.date.isoformat() not in prompt   # ... and is stripped from what the model sees
-    assert "\nDate:" not in prompt and "date:" not in prompt.lower().replace("update", "")
-    assert re.search(r"on or before \d{4}-\d{2}-\d{2}", prompt)  # the decision's OWN cut-off date is kept
+    pasted = parse_extraction_json(json.dumps({"adr_id": adr_id, "decision": "permits", "covers_this_dependency": "yes",
+                                               "limit": "introduced_on_or_before", "limit_date": limit_date, "explanation": "as pasted"}))
+    from analysis.intent.reader import introduction_date
+    introduced = introduction_date(bundle.evolution)
+    assert resolve_extraction(pasted, introduced).outcome == "violation"   # what x2 did: wrong
+    grounded = ground_limit(pasted, bundle.adrs)
+    assert grounded["limit"] == "none" and "record date" in grounded["grounding"]
+    assert resolve_extraction(grounded, introduced).outcome == "justified" and ctx.truth[ctx.edge(f)] == "justified"
 
 
-def test_strip_keeps_dates_inside_decision_sentences():
-    from analysis.semantic.extract import strip_adr_dates
-    text = "---\nid: A\ndate: 2025-01-02\n---\n# T\n\nDate: 2025-01-02\n\n## Decision\n\nAllowed up to 2025-09-13.\n- **Date**: 2025-01-02"
-    out = strip_adr_dates(text)
-    assert "2025-01-02" not in out and "Allowed up to 2025-09-13." in out
+def test_pipeline_applies_grounding_end_to_end(bench_cases):
+    """A model that reports the record date as a limit on a case with NO limit (scenario B) must still be justified."""
+    ctx = bench_cases["B"]
+    f = next(f for f in ctx.findings if ctx.truth[ctx.edge(f)] != "conformant")
+    record_date = ctx.bundle(f).adrs[0].adr.date.isoformat()
 
-
-def test_a_mixed_adr_is_resolved_per_module():
-    """Development finding: the model said 'covers: yes' for a module the ADR names only to forbid it."""
-    forbidden = parse_extraction_json('{"decision": "prohibits", "limit": "none", "explanation": "customer_service must keep going through the layer"}')
-    permitted = parse_extraction_json('{"decision": "permits", "limit": "none"}')
-    assert resolve_extraction(forbidden, None).outcome == "violation"
-    assert resolve_extraction(permitted, None).outcome == "justified"
+    def fn(system, prompt):
+        return json.dumps({"adr_id": None, "decision": "permits", "covers_this_dependency": "yes",
+                           "limit": "introduced_on_or_before", "limit_date": record_date, "explanation": "copied the header date"})
+    r = target(pipeline.run_extract_compute(ctx, pipeline.TimedClient(FunctionClient(fn, "headerdate"))))
+    assert r["predicted_violation"] is False and r["truth"] == "justified" and "record date" in json.loads(r["extraction"])["grounding"]

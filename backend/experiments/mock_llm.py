@@ -57,17 +57,11 @@ def _extract_block(block: str, src_stem: str) -> dict | None:
     if m and m.group(1) in _INACTIVE:
         return None
     adr_id = re.search(r'<adr id="([^"]+)"', block)
-    about_this = src_stem.lower() in low or "commit_reference" in low
-    if not about_this:
-        decision = "does_not_address"
-    elif "reaffirm" in low or "was reviewed and rejected" in low:
-        decision = "prohibits"
-    elif "grandfathered" in low or ("permanent" in low and "exception" in low) or "may query" in low:
-        decision = "permits"
-    else:
-        decision = "does_not_address"
+    decision = "prohibits" if ("reaffirm" in low or "was reviewed and rejected" in low) else (
+        "permits" if ("grandfathered" in low or ("permanent" in low and "exception" in low) or "may query" in low) else "does_not_address")
+    covers = "yes" if (src_stem.lower() in low or "commit_reference" in low) else "no"
     cutoff = re.search(r"on or before (\d{4}-\d{2}-\d{2})", low)
-    return {"adr_id": adr_id.group(1) if adr_id else None, "decision": decision,
+    return {"adr_id": adr_id.group(1) if adr_id else None, "decision": decision, "covers_this_dependency": covers,
             "limit": "introduced_on_or_before" if cutoff else "none", "limit_date": cutoff.group(1) if cutoff else None,
             "explanation": "Keyword stand-in extraction."}
 
@@ -78,8 +72,8 @@ def mock_model(system: str, prompt: str) -> str:
         src = re.search(r"Source file: (\S+)", prompt)
         stem = src.group(1).rsplit("/", 1)[-1].rsplit(".", 1)[0] if src else ""
         found = [x for x in (_extract_block(b, stem) for b in blocks) if x]
-        pick = next((x for x in found if x["decision"] == "permits"), found[0] if found else None)
-        return json.dumps(pick or {"adr_id": None, "decision": "does_not_address", "limit": "none",
+        pick = next((x for x in found if x["decision"] == "permits" and x["covers_this_dependency"] == "yes"), found[0] if found else None)
+        return json.dumps(pick or {"adr_id": None, "decision": "does_not_address", "covers_this_dependency": "no", "limit": "none",
                                    "limit_date": None, "explanation": "No active record addresses this."})
     if "ONE import statement" in system:  # LLM-only edge prompt
         src = re.search(r"Source file: (\S+)", prompt)
