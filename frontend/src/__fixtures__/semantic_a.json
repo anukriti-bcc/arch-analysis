@@ -9,7 +9,8 @@
   "outcome_source": "direct",
   "reasons": [
    "evidence sufficient: no relevant active intent and no ambiguity signal in history"
-  ]
+  ],
+  "resolution": "direct"
  },
  "evidence": {
   "adrs": [],

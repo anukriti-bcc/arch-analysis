@@ -24,5 +24,5 @@ its evidence, and some evidence (the real-model experiment) does not exist yet.
 - [x] Genuine engineering complexity (not CRUD)
 - [x] Meaningful technical decisions and trade-offs (policy rules, evidence sources, cost vs accuracy)
 - [x] Demonstrates EA1, EA3, EA4, EA5 (EA2 arguable)
-- [x] Evaluated objectively — **harness complete; real-model run pending**
+- [x] Evaluated objectively — **real-model runs done** (primary exploratory, hard tier, M7 confirmation on 216 fresh cases, held-out wording): see `docs/M7_CONFIRMATION.md`, `docs/HELDOUT_RESULTS.md`, `docs/ANALYSIS_PLAN.md`
 - [ ] Supervisor meeting diary maintained — **to be confirmed by the team**

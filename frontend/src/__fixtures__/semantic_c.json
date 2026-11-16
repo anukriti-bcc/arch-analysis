@@ -6,10 +6,11 @@
   "final_verdict": "justified",
   "forced": false,
   "llm_called": true,
-  "outcome_source": "llm",
+  "outcome_source": "llm_extract",
   "reasons": [
    "I1: active decision record(s) relevant: ADR-030"
-  ]
+  ],
+  "resolution": "extract_compute"
  },
  "evidence": {
   "adrs": [
@@ -138,23 +139,30 @@
  },
  "finding_id": "F006",
  "semantic_analysis": {
-  "attempts": 1,
   "cached": false,
-  "confidence": 0.7,
+  "computed": "introduced 2025-07-14 satisfies 'introduced_on_or_before 2025-09-13'",
+  "confidence": null,
   "error": null,
   "evidence_used": [],
-  "explanation": "An active decision record permits this dependency.",
-  "latency_s": 0.0003543209999996577,
-  "mode": "review",
+  "explanation": "Keyword stand-in extraction.",
+  "extract_version": "x4",
+  "extraction": {
+   "adr_id": "ADR-030",
+   "covers_this_dependency": "yes",
+   "decision": "permits",
+   "explanation": "Keyword stand-in extraction.",
+   "grounding": "accepted",
+   "limit": "introduced_on_or_before",
+   "limit_date": "2025-09-13"
+  },
+  "latency_s": 0.0006203049999982113,
+  "mode": "extract_compute",
   "model": "stub-model",
   "parsed_ok": true,
-  "prompt_variant": "full",
-  "prompt_version": "v1",
-  "raw_text": "{\"verdict\": \"justified\", \"confidence\": 0.7, \"explanation\": \"An active decision record permits this dependency.\", \"evidence_used\": []}",
   "tokens_estimated": true,
   "tokens_used": {
-   "input": 841,
-   "output": 33
+   "input": 1021,
+   "output": 47
   },
   "verdict": "justified"
  }

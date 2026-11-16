@@ -41,7 +41,7 @@ describe("DecisionPanel — after running", () => {
   it("shows an LLM-justified outcome with the model's explanation and cost", () => {
     render(<DecisionPanel {...base} policy={evidenceC.policy} decision={semanticC.decision} semantic={semanticC.semantic_analysis} />);
     expect(screen.getByTestId("verdict-banner")).toHaveTextContent("Justified by documented intent");
-    expect(screen.getByTestId("decision-how")).toHaveTextContent("Resolved by LLM semantic review");
+    expect(screen.getByTestId("decision-how")).toHaveTextContent("Resolved by extraction and computation");
     expect(screen.getByTestId("semantic-explanation")).toHaveTextContent(semanticC.semantic_analysis.explanation);
     expect(screen.getByTestId("semantic-meta")).toHaveTextContent("stub-model");
     expect(screen.getByRole("button", { name: "Run again" })).toBeInTheDocument();
@@ -81,3 +81,48 @@ describe("DecisionPanel — after running", () => {
     expect(screen.getByTestId("semantic-meta")).toHaveTextContent("token counts estimated");
   });
 });
+
+describe("DecisionPanel — extract-then-compute (method M7)", () => {
+  const extract = {
+    mode: "extract_compute", parsed_ok: true, verdict: "violation", confidence: null, evidence_used: [], error: null,
+    explanation: "The ADR permits direct access for code introduced on or before the freeze.",
+    extraction: { adr_id: "ADR-014", decision: "permits", covers_this_dependency: "yes", limit: "introduced_on_or_before", limit_date: "2025-07-14", grounding: "accepted" },
+    computed: "introduced 2025-08-13 does not satisfy 'introduced_on_or_before 2025-07-14'",
+    model: "stub-model", tokens_used: { input: 900, output: 60 }, latency_s: 1.2, cached: false, tokens_estimated: false,
+  };
+  const decision = { ...semanticC.decision, final_verdict: "violation", outcome_source: "llm_extract", resolution: "extract_compute" };
+
+  it("shows what the model extracted and what code computed from it", () => {
+    render(<DecisionPanel {...base} policy={evidenceC.policy} decision={decision} semantic={extract} />);
+    expect(screen.getByText("Verdict computed from extracted facts")).toBeInTheDocument();
+    expect(screen.getByTestId("extracted-facts")).toHaveTextContent("permits");
+    expect(screen.getByTestId("extracted-facts")).toHaveTextContent("introduced on or before 2025-07-14");
+    expect(screen.getByTestId("computed-verdict")).toHaveTextContent("does not satisfy");
+    expect(screen.getByTestId("grounding")).toHaveTextContent("accepted");
+    expect(screen.getByTestId("verdict-banner")).toHaveTextContent("Confirmed violation");
+  });
+
+  it("shows no date limit plainly and hides the grounding line when there is no limit", () => {
+    const sem = { ...extract, verdict: "justified", computed: "permits this module, no date limit",
+                  extraction: { ...extract.extraction, limit: "none", limit_date: null, grounding: "no limit claimed" } };
+    render(<DecisionPanel {...base} policy={evidenceC.policy} decision={{ ...decision, final_verdict: "justified" }} semantic={sem} />);
+    expect(screen.getByTestId("extracted-facts")).toHaveTextContent("no date limit");
+    expect(screen.queryByTestId("grounding")).not.toBeInTheDocument();
+  });
+
+  it("labels an unresolved extraction honestly", () => {
+    const sem = { ...extract, verdict: null, computed: "limit stated but the introduction date is unknown" };
+    render(<DecisionPanel {...base} policy={evidenceC.policy} decision={{ ...decision, outcome_source: "fallback" }} semantic={sem} />);
+    expect(screen.getByText("unresolved")).toBeInTheDocument();
+    expect(screen.getByTestId("decision-how")).toHaveTextContent("gave no usable verdict");
+  });
+
+  it("keeps the ordinary review wording for history-only escalations", () => {
+    const review = { ...semanticC.decision, resolution: "review", outcome_source: "llm" };
+    const reviewResult = { ...semanticC.semantic_analysis, mode: "review", extraction: undefined, computed: undefined };
+    render(<DecisionPanel {...base} policy={evidenceC.policy} decision={review} semantic={reviewResult} />);
+    expect(screen.getByTestId("decision-how")).toHaveTextContent("Resolved by LLM semantic review");
+    expect(screen.queryByTestId("extracted-facts")).not.toBeInTheDocument();
+  });
+});
+

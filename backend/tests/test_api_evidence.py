@@ -112,7 +112,7 @@ def test_cache_filled_by_the_experiment_serves_the_live_api_without_calling_the_
     stub = FunctionClient(mock_model, "demo-model")
     shared = CachingClient(stub, str(tmp_path / "shared.sqlite"))
 
-    pipeline.run_full_hybrid(bench_cases["C"], pipeline.TimedClient(shared))  # what the experiment does
+    pipeline.run_extract_compute(bench_cases["C"], pipeline.TimedClient(shared))  # what the experiment (method M7) does
     calls_after_experiment = stub.calls
     assert calls_after_experiment == 1
 

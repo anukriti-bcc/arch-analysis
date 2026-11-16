@@ -9,16 +9,16 @@ held-out-wording evaluation; the commit timestamp is the evidence that it came f
 
 | Question | Answer |
 |---|---|
-| Date and commit hash at which this plan was committed | |
-| Has anyone on the team looked at the primary run's `test`-split results before this was written? | yes / no |
-| Has the held-out-wording run (`--wording heldout`) been executed or inspected? | yes / no |
-| Were prompts or the policy changed after looking at `test` results? | yes / no (if yes, say what, below) |
+| Date and commit hash at which this plan was committed | First committed to Git in `642b2b1` on 2026-11-14, i.e. **after** the primary run and **before** the held-out run (executed 2026-11-16). The repository only gained a Git history on 2026-11-14, so the ordering of the earlier work is not provable from Git. Commit timestamps are those of the machine that created them. |
+| Has anyone on the team looked at the primary run's `test`-split results before this was written? | **yes** (so the primary run is exploratory) |
+| Has the held-out-wording run (`--wording heldout`) been executed or inspected? | **Executed on 2026-11-16**, once, with the frozen code; its ADR text was not read by anyone before the run. Results: `docs/HELDOUT_RESULTS.md`. |
+| Were prompts or the policy changed after looking at `test` results? | **M5's prompts and policy: no.** New method M7 and baseline M6 were added afterwards and developed on separate development seeds, with every change dated in the deviations log below; the minimal-prompt run has still not been executed. |
 
 **Facts already established (recorded so they are not reconstructed from memory later).**
 * The primary run (`results/primary_exploratory/`, model Qwen2.5 7.6B Q4_K_M) was executed and its dev **and test** results were seen before this plan was committed. It is therefore **exploratory**.
 * Its response cache contains exactly 514 entries, which equals the 514 distinct calls of that run, and all 514 are still served by today's prompts. So no prompt variant other than the current one was sent through that cache, and no prompt was changed after the results were seen.
-* The held-out-wording run and the minimal-prompt run have **not** been executed.
-* The `M5` policy and prompts are unchanged since the run. (If the date-facts feature in the Deviations log is added, that changes.)
+* The held-out-wording run was executed on 2026-11-16 (see the deviations log); the minimal-prompt run has **not** been executed.
+* The `M5` policy and prompts are unchanged since the run. The date-facts idea became method M7 (`analysis/semantic/extract.py`), a separate method; M5 is untouched.
 
 **How to read the answers.** If the primary run's test results have already been seen, that run is *exploratory*: it
 motivated the plan and cannot confirm it. The **held-out-wording run is then the confirmatory run**, because its

@@ -25,6 +25,8 @@ export default function DecisionPanel({ policy, decision, semantic, running, err
     if (!decision.llm_called) how = "Resolved from the evidence alone. No LLM call was made.";
     else if (decision.outcome_source === "fallback")
       how = "The LLM was called but gave no usable verdict, so the structural verdict was kept.";
+    else if (decision.resolution === "extract_compute")
+      how = "Resolved by extraction and computation: the model extracted facts from the ADR, and code computed the verdict.";
     else how = decision.forced ? "LLM review was forced although the policy considered the evidence sufficient." : "Resolved by LLM semantic review.";
   }
 
@@ -69,15 +71,45 @@ export default function DecisionPanel({ policy, decision, semantic, running, err
   );
 }
 
+// Extract-then-compute (method M7): show what the model READ, what it was checked against, and what CODE computed.
+function ExtractedFacts({ semantic }) {
+  const x = semantic.extraction;
+  if (!x) return null;
+  const limit = x.limit === "none" ? "no date limit" : `${x.limit.replaceAll("_", " ")} ${x.limit_date || "(no usable date)"}`;
+  return (
+    <div className="extracted" data-testid="extracted-facts">
+      <dl>
+        <dt>The ADR's decision</dt>
+        <dd>
+          {x.decision.replaceAll("_", " ")}
+          {x.covers_this_dependency ? ` · covers this module: ${x.covers_this_dependency}` : ""}
+        </dd>
+        <dt>Date limit</dt>
+        <dd>{limit}</dd>
+        {x.limit !== "none" && x.grounding && (
+          <>
+            <dt>Checked against the text</dt>
+            <dd data-testid="grounding">{x.grounding}</dd>
+          </>
+        )}
+      </dl>
+      <div className="computed" data-testid="computed-verdict">
+        <strong>Computed by code:</strong> {semantic.computed}
+      </div>
+    </div>
+  );
+}
+
 function SemanticResult({ semantic }) {
   const ok = semantic.parsed_ok;
+  const extract = semantic.mode === "extract_compute";
   return (
     <div className="semantic" data-testid="semantic-result">
       <div className="semantic-head">
-        <span className="semantic-title">LLM verdict</span>
+        <span className="semantic-title">{extract ? "Verdict computed from extracted facts" : "LLM verdict"}</span>
         {ok ? (
           <span className={`status-pill ${semantic.verdict === "justified" ? "justified" : semantic.verdict === "violation" ? "violation" : "review"}`}>
-            {semantic.verdict}
+            {semantic.verdict || "unresolved"}
           </span>
         ) : (
           <span className="status-pill violation">no usable output</span>
@@ -88,6 +120,7 @@ function SemanticResult({ semantic }) {
           </span>
         )}
       </div>
+      {ok && extract && <ExtractedFacts semantic={semantic} />}
       {ok ? (
         <p className="semantic-explanation" data-testid="semantic-explanation">{semantic.explanation}</p>
       ) : (

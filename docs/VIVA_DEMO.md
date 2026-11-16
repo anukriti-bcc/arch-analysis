@@ -30,7 +30,7 @@ the real-model run are marked **[needs results]**.
 | 6 | Analyze **J01** | "The ADR here shares no wording with the code. Only the introducing commit cites its id. History is what connects the intent to the dependency." Point at the *selected because: cited by the introducing commit* chip |
 | 7 | Analyze **F01** | "The only record permitting it is superseded, so no model is needed." |
 | 8 | **Evaluation** tab **[needs results]** | Metrics table → accuracy-vs-cost chart → scenario heat map → inspector with "wrong only" ticked: "Here is where each method fails and why." |
-| 9 | Slide: testing | "467 automated tests (378 backend, 89 frontend). Core code is at 96% line coverage, frontend 99%. Unit tests use stub models so they're deterministic. A contract test fails if frontend fixtures drift from the API. Metrics are cross-checked against scikit-learn, and the import graph and contract violations are cross-checked against the reference tools (grimp and import-linter) on random repositories." |
+| 9 | Slide: testing | "565 automated tests (472 backend, 93 frontend). Coverage was last measured before the M6/M7 work. Unit tests use stub models so they're deterministic. A contract test fails if frontend fixtures drift from the API. Metrics are cross-checked against scikit-learn, and the import graph and contract violations are cross-checked against the reference tools (grimp and import-linter) on random repositories." |
 | 10 | Slide: limitations | See below. Say them before they are asked. |
 
 ## Questions the panel is likely to ask — and honest answers

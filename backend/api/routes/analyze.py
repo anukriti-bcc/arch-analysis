@@ -10,7 +10,9 @@ from analysis.dependency.repository_scanner import scan_repository
 from analysis.evidence.aggregator import EvidenceAggregator
 from analysis.evolution.git_evolution import GitEvolutionAnalyzer
 from analysis.intent.adr import load_adrs
+from analysis.intent.reader import introduction_date
 from analysis.policy.escalation import EvidenceGuidedPolicy
+from analysis.semantic.extract import LLMExtractAnalyzer, resolve_extraction
 from analysis.semantic.llm_analyzer import LLMSemanticAnalyzer
 from analysis.semantic.llm_client import LLMClient, client_from_env
 from api.schemas.analyze import (
@@ -36,6 +38,25 @@ def get_llm_client() -> LLMClient | None:
     analysis/semantic/llm_client.py). A function, not a constant, so tests can
     substitute a stub and so a missing configuration is reported per request."""
     return client_from_env()
+
+
+def _extract_and_compute(client: LLMClient, bundle) -> tuple[dict, str, str]:
+    """Method M7 in the product: the model EXTRACTS facts from the ADR (it is never shown any date to compare), and code
+    COMPUTES the verdict by comparing the extracted date limit with the Git introduction date.
+    Returns (semantic result for the UI, final verdict, outcome source)."""
+    result = LLMExtractAnalyzer(client).extract(bundle)
+    base = {"mode": "extract_compute", "extract_version": result["extract_version"], "parsed_ok": result["parsed_ok"],
+            "error": result["error"], "model": result["model"], "tokens_used": result["tokens_used"],
+            "tokens_estimated": result["tokens_estimated"], "latency_s": result["latency_s"], "cached": result["cached"],
+            "confidence": None, "evidence_used": []}
+    x = result["parsed"]
+    if x is None:  # unparseable reply: keep the structural verdict and say so
+        return {**base, "verdict": None, "explanation": "", "extraction": None, "computed": None}, "violation", "fallback"
+    res = resolve_extraction(x, introduction_date(bundle.evolution))
+    extraction = {**x, "limit_date": x["limit_date"].isoformat() if x["limit_date"] else None}
+    semantic = {**base, "verdict": None if res.outcome == "unresolved" else res.outcome, "explanation": x["explanation"],
+                "extraction": extraction, "computed": res.note}
+    return semantic, ("justified" if res.outcome == "justified" else "violation"), ("fallback" if res.outcome == "unresolved" else "llm_extract")
 
 
 def _find(finding_id: str, analysis_id: str | None):
@@ -239,7 +260,9 @@ def request_semantic_analysis(finding_id: str, analysis_id: str | None = None, f
 
     1. aggregate intent (rules, ADRs), structural and evolution evidence;
     2. ask the escalation policy whether that evidence is sufficient;
-    3. only if not (or if `force=true`), call the configured LLM.
+    3. only if not (or if `force=true`), call the configured LLM. When an active relevant ADR exists the model only
+       EXTRACTS facts from it (decision, date limit) and code computes the verdict (method M7); otherwise the
+       ordinary review prompt is used.
 
     The structured decision, including *why* the LLM was or was not used, is
     stored on the finding and returned.
@@ -259,17 +282,24 @@ def request_semantic_analysis(finding_id: str, analysis_id: str | None = None, f
                         "LLM_MODEL (and LLM_API_KEY if needed), e.g. for Ollama: "
                         "LLM_BASE_URL=http://localhost:11434/v1 LLM_MODEL=qwen2.5:7b-instruct."),
             )
-        result = LLMSemanticAnalyzer(client).analyze(finding, bundle)
+        if any(m.adr.is_active for m in bundle.adrs):
+            # an active relevant ADR exists: extract its facts, let code compute the verdict (method M7)
+            result, final, outcome = _extract_and_compute(client, bundle)
+            resolution = "extract_compute"
+        else:
+            # history-only escalation: nothing to extract, so the ordinary review prompt (as in M5/M7)
+            result = LLMSemanticAnalyzer(client).analyze(finding, bundle)
+            verdict = result["verdict"] if result["parsed_ok"] else "violation"
+            outcome = "llm" if result["parsed_ok"] and verdict in ("violation", "justified") else "fallback"
+            final = "justified" if verdict == "justified" else "violation"
+            resolution = "review"
         finding.semantic_analysis = result
-        verdict = result["verdict"] if result["parsed_ok"] else "violation"
-        outcome = "llm" if result["parsed_ok"] and verdict in ("violation", "justified") else "fallback"
-        final = "justified" if verdict == "justified" else "violation"
         finding.decision = {**decision.to_dict(), "forced": force and not decision.escalate, "llm_called": True,
-                            "final_verdict": final, "outcome_source": outcome}
+                            "final_verdict": final, "outcome_source": outcome, "resolution": resolution}
     else:
         finding.semantic_analysis = None
         finding.decision = {**decision.to_dict(), "forced": False, "llm_called": False,
-                            "final_verdict": decision.direct_verdict, "outcome_source": "direct"}
+                            "final_verdict": decision.direct_verdict, "outcome_source": "direct", "resolution": "direct"}
     return {"finding_id": finding_id, "analysis_id": run.id, "decision": finding.decision,
             "semantic_analysis": finding.semantic_analysis, "evolution_evidence": finding.evolution_evidence,
             "evidence": bundle.to_dict()}

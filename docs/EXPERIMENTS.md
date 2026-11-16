@@ -75,7 +75,7 @@ Rough time (a guess, measure it in the pilot): a 7B model on a laptop CPU may ta
 seconds per call (hours for the full run); with a GPU, seconds per call.
 
 No usable GPU (e.g. a laptop with 8 GB RAM and integrated graphics cannot run a 7-8B model in reasonable time)?
-Use `notebooks/run_on_free_gpu.ipynb` (untested by its author; see its header), or run the same commands inside a free Kaggle or Colab notebook
+Use `notebooks/run_on_free_gpu.ipynb` (used for every real-model run in this project, on Kaggle), or run the same commands inside a free Kaggle or Colab notebook
 (clone the repo, install Ollama, pull the model) and download `results/`
 afterwards. Check current free-GPU quotas and session limits yourself; sessions are time-limited,
 which is another reason the cache and `--max-calls` resume behaviour matter.
