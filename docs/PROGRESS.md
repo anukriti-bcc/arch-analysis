@@ -1,12 +1,13 @@
 # CURRENT STATE (2026-11-16) - read this first; everything below is the history
 
 * Built and tested: parser, dependency graph, rule engine, Git evolution, ADR parsing and evidence, escalation policy, LLM layer, API, React UI
-  (472 backend + 93 frontend tests), experiment harness with methods M1-M7, ablations A1/A2, three benchmark tiers, pooling and capture metrics.
+  (485 backend + 93 frontend tests), experiment harness with methods M1-M7, ablations A1/A2, three benchmark tiers, pooling and capture metrics.
 * Run with a real model (Qwen2.5 7B Q4 on Kaggle): primary benchmark (exploratory), hard tier, M7 confirmation on 216 fresh cases (all five
   pre-registered criteria passed), held-out wording (blind). Results and caveats: `docs/M7_CONFIRMATION.md`, `docs/HELDOUT_RESULTS.md`,
   `docs/HARD_TIER.md`; the dated decision log is `docs/ANALYSIS_PLAN.md`.
 * The product (API/UI) now resolves escalated findings the way method M7 does: the model extracts facts from the ADR, code computes the verdict.
-* Not done: minimal-prompt sensitivity run; real ADR corpora; second model; escalation scoring; TypeScript, PostgreSQL, Docker (see README deviations).
+* Real-ADR check done (`docs/REAL_ADRS.md`): dependency-governing ADRs are rare and M6 could not read them; no language model run on real ADRs yet.
+* Not done: minimal-prompt sensitivity run; LLM on real ADRs; second model; escalation scoring; TypeScript, PostgreSQL, Docker (see README deviations).
 * Gap-by-gap status of the earlier assessment: `docs/GAPS_STATUS.md`.
 
 ---

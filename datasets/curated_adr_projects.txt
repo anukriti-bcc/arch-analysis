@@ -1,0 +1,19 @@
+# well-known projects with long-standing, human-written ADR practice (tried; any that do not exist or have <5 ADRs are simply skipped)
+kgrzybek/modular-monolith-with-ddd
+backstage/backstage
+JabRef/jabref
+dapr/dapr
+ministryofjustice/modernisation-platform
+ministryofjustice/cloud-platform
+MetaMask/decisions
+arachne-framework/architecture
+adr/madr
+thomvaill/log4brains
+openmrs/openmrs-core
+alphagov/govuk-infrastructure
+ministryofjustice/analytical-platform
+DFE-Digital/teacher-training-api
+nhsuk/nhsuk-frontend
+govuk-one-login/onboarding-self-service-experience
+hmcts/cnp-flux-config
+Netflix/dispatch

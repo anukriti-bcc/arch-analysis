@@ -12,10 +12,10 @@ held-out run and the confirmation seeds. This file records, gap by gap, what has
 | 3 | Benchmark written alongside the policy; confirmatory runs not run | **Partly fixed** | Held-out wording run executed once, blind (`docs/HELDOUT_RESULTS.md`): H1-H3 replicate, **H4 (history helps) does not**, F1 criterion met narrowly. Fresh-seed confirmation of M7 (216 cases) done. Still synthetic and written by the team; the minimal-prompt sensitivity run has **not** been run; A2 was not run on the primary benchmark. |
 | 4 | Low statistical power | **Fixed for the headline claim** | M7 minus M5 on 216 pooled fresh cases: +0.079 (95% CI +0.042 to +0.121). Intervals remain wide for the held-out comparisons (60 cases) and the primary test split (28). |
 | 5 | M2 is easy to beat; only one model | **Not fixed** | M2 was re-run on the hard tier (F1 0.18, same pattern). No second model and no stronger LLM-only prompt. |
-| 6 | ADR matching will over-fire on real repositories | **Not fixed** | Untested on real ADR text. `match_strength` (strong/weak) exists in the M6 reader but the M5/M7 escalation still uses the old relevance rule. |
+| 6 | ADR matching will over-fire on real repositories | **Measured, not fixed** | Now tested on 202 real ADRs (`docs/REAL_ADRS.md`): the type-words rule selects 0.5-6% of real ADRs per type pair, so over-firing is small in absolute terms; but it needs exact words and never matches plurals ('services', 'databases'), so it under-selects. The matcher is unchanged. `match_strength` exists in the M6 reader but the M5/M7 escalation still uses the old rule. |
 | 7 | Code comments are never used as evidence | **Not fixed** | |
 | 8 | Evolution is shallow | **Not fixed** | Per-dependency only; renames flagged not tracked; history truncated at 1000 commits. |
-| 9 | Real-repository evidence does not test the research question | **Not fixed** | sqlfluff only, no ADR text, no LLM. |
+| 9 | Real-repository evidence does not test the research question | **Not fixed; partly informed** | Still sqlfluff only for conformance, with no ADR text and no LLM. What changed: a real-ADR corpus now shows that dependency-governing ADRs are rare (3-10% in a hand-read sample of 60) and that M6 could not read the six found. No language model has been run on real ADRs yet. |
 | 10 | Narrow dependency scope | **Not fixed** | Direct Python imports; allowed/forbidden rules only. |
 | 11 | Stack deviations from the synopsis | **Not fixed** (documented) | JavaScript not TypeScript; in-memory store not PostgreSQL; Docker never run; scikit-learn used only in tests. Listed in the README deviations table. |
 | 12 | Supervisor diary empty | **Excluded** | Must be real entries by the team. |
@@ -30,3 +30,6 @@ held-out run and the confirmation seeds. This file records, gap by gap, what has
 * **Prompt wording is fragile at this model size.** Three extraction prompt versions moved individual scenarios by up to 5 of 12 cases; the final fix was
   a code-side check rather than more prompt text (`docs/ANALYSIS_PLAN.md`, deviations log).
 * **The product now matches the research:** the API/UI resolve escalated findings with extract-then-compute and show the extracted facts and the computed verdict.
+* **Real ADRs rarely govern dependencies, and the ones that do are plain or irregular prose** (`docs/REAL_ADRS.md`). This bounds how often ADR-based
+  conformance checking applies and shows that the held-out result (M6 matches M7) does not carry over to real dependency rules (n = 6, single rater).
+* **The frozen M6 reader has a defect on MADR-format ADRs** (it reads "Decision Drivers" as the decision). Documented, not changed.

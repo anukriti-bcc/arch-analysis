@@ -13,3 +13,7 @@ dist/
 # generated benchmark repositories (nested .git dirs) and experiment outputs
 datasets/benchmark/generated/
 results/
+
+# real ADR texts belong to their authors: only the manifest and analysis are published
+datasets/real_adrs*/corpus/
+datasets/real_adrs*/candidates.json
