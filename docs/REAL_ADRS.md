@@ -127,3 +127,22 @@ Open `results/real_adrs/annotation_sheet.csv` (60 rows, decision excerpts with s
 
 Then run `python -m experiments.real_adrs.agreement --sheet <your sheet> --other results/real_adrs/indicative_labels_claude.csv`. Report both sets of labels,
 the kappa, and the disagreements; use the team's own labels for the prevalence figure in the report.
+
+## Case study: 7 hand-built cases from real ADRs (time-boxed; M7 part not yet run)
+
+`datasets/real_adrs_case_study/cases.csv`, runner `experiments/real_adrs/case_study.py`. Four real ADRs (Protean ADR-0008, modular-monolith-with-ddd ADR-14,
+ADNC ADR-001, educational-platform ADR-12; all MIT or Apache-2.0), each **pinned to a commit and a SHA-256** (the runner refuses text that does not match),
+with a hand-written flagged dependency and a draft expected verdict. **This is a demonstration, not a benchmark:** seven cases cannot give a rate. The
+expected verdicts are a **draft written by the person who built the cases**; two are marked `debatable` (C04, C06); the team must review all of them
+(`reviewed_by_team`, `team_expected` columns) before any result is quoted.
+
+**M6 on the seven (frozen code, no model needed), run 2026-11-18:**
+
+| | Result |
+|---|---|
+| Reading only (the ADR is forced in) | "unclear" for 6 of 7; "permits" for C04 (the modular-monolith ADR: "we allow direct calls in the future, but this should be an exception"), which is the wrong way round. **0 of 7 read correctly.** |
+| As the pipeline runs it (the relevance matcher must select the ADR first) | The ADR is selected for only 2 of 7 (C01, C02, because the Protean ADR names the files). The pipeline's "5 of 7 correct" is just its default verdict of "violation", which plain static analysis also gives; **it gets 0 of the 2 justified cases**. |
+
+**M7 on the seven: pending.** `real_adr_case_study_cells.txt` runs it on Kaggle (7 model calls, Internet on, frozen-code check included). Whatever it
+produces is reported with these caveats: seven cases, draft labels from the builder, one small quantised model.
+
