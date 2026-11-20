@@ -28,10 +28,11 @@ from analysis.semantic.llm_client import (
     CachingClient, FunctionClient, LLMClient, LLMResponse, OpenAICompatibleClient,
 )
 from analysis.semantic.prompts import PROMPT_VERSION
-from experiments import metrics, pipeline
+from analysis.policy.gated import ReadabilityGatedPolicy
+from experiments import metrics, pipeline, pipeline_m8
 from experiments.mock_llm import mock_model
 
-ALL_METHODS = ["static", "llm_only", "full_hybrid", "generic_selective", "evidence_guided", "no_history", "no_intent", "deterministic_adr", "extract_compute"]
+ALL_METHODS = ["static", "llm_only", "full_hybrid", "generic_selective", "evidence_guided", "no_history", "no_intent", "deterministic_adr", "extract_compute", "gated"]
 
 
 class BudgetExceeded(RuntimeError):
@@ -100,6 +101,10 @@ def build_paired_comparisons(preds: pd.DataFrame, splits: list[str], n_boot: int
     if m7 in methods:  # M7 minus M5 is the clean test of extract-then-compute (same escalation policy)
         frames += [metrics.paired_bootstrap(preds, sp, [m7], [b], n_boot) for sp in splits
                    for b in (m5, "M3_full_hybrid", "M6_deterministic_adr", "M1_static") if b in methods]
+    m8 = "M8_gated"
+    if m8 in methods:  # M8 (readability-gated escalation) against the methods it is meant to improve on
+        frames += [metrics.paired_bootstrap(preds, sp, [m8], [b], n_boot) for sp in splits
+                   for b in ("M7_extract_compute", m5, "M3_full_hybrid", "M6_deterministic_adr", "M1_static") if b in methods]
     frames = [f for f in frames if not f.empty]
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
@@ -130,6 +135,7 @@ def main(argv=None) -> int:
     ap.add_argument("--price-in", type=float, default=None, help="USD per 1M input tokens")
     ap.add_argument("--price-out", type=float, default=None, help="USD per 1M output tokens")
     ap.add_argument("--bootstrap", type=int, default=1000)
+    ap.add_argument("--budget", type=int, default=None, help="M8 only: keep at most this many model calls (riskiest first)")
     ap.add_argument("--prompt-variant", choices=["full", "minimal"], default="full",
                     help="'minimal' drops all scenario-specific guidance from the system prompts (sensitivity analysis)")
     args = ap.parse_args(argv)
@@ -172,6 +178,9 @@ def main(argv=None) -> int:
                 rows += m5_rows
         if "extract_compute" in wanted:
             for c in contexts: rows += pipeline.run_extract_compute(c, client, variant=args.prompt_variant)
+        if "gated" in wanted:
+            decisions = pipeline_m8.route_all(contexts, ReadabilityGatedPolicy(), args.budget)
+            for c in contexts: rows += pipeline_m8.run_gated(c, client, decisions, variant=args.prompt_variant)
         if "no_history" in wanted:
             for c in contexts: rows += pipeline.run_evidence_guided(c, client, method="A1_no_history", use_history=False, variant=args.prompt_variant)
         if "no_intent" in wanted:
