@@ -89,6 +89,21 @@ def run_case(row: dict, client, corpus: str | None = None) -> dict:
     return out
 
 
+def rescore(results: pd.DataFrame, cases: pd.DataFrame) -> pd.DataFrame:
+    """Score the saved results against the TEAM's reviewed verdicts. The model run uses the builder's draft verdicts (so the team can review
+    them first, blind to the model's answers); a case's `team_expected`, when filled, replaces the draft here. Cases the team marks
+    `exclude` in `team_expected` are dropped."""
+    c = cases[["case_id", "expected", "team_expected", "reviewed_by_team"]].copy()
+    c["final_expected"] = c.apply(lambda r: r.team_expected.strip().lower() if r.team_expected.strip() else r.expected, axis=1)
+    m = results.drop(columns=[x for x in ("expected",) if x in results.columns]).merge(c[["case_id", "final_expected", "expected", "reviewed_by_team"]],
+                                                                                         on="case_id").rename(columns={"expected": "draft_expected"})
+    m = m[m.final_expected != "exclude"].copy()
+    for k in ("m6_pipeline", "m6_reading_only", "m7"):
+        m[f"{k}_correct"] = m[k] == m["final_expected"]
+    m["verdict_changed_by_team"] = m.final_expected != m.draft_expected
+    return m
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--cases", default="../datasets/real_adrs_case_study/cases.csv")
@@ -96,7 +111,15 @@ def main(argv=None) -> int:
     ap.add_argument("--out", default="../results/real_adrs_case_study")
     ap.add_argument("--base-url", default=os.environ.get("LLM_BASE_URL", "http://localhost:11434/v1"))
     ap.add_argument("--model", default=os.environ.get("LLM_MODEL", "arch-judge"))
+    ap.add_argument("--rescore", default=None, help="results.csv from an earlier run: score it against the team's reviewed verdicts in --cases, no model needed")
     args = ap.parse_args(argv)
+    if args.rescore:
+        cases_df = pd.read_csv(args.cases, dtype=str).fillna("")
+        m = rescore(pd.read_csv(args.rescore, dtype={"m7_parsed_ok": bool}).fillna(""), cases_df)
+        print(m[["case_id", "draft_expected", "final_expected", "reviewed_by_team", "m6_pipeline", "m6_reading_only", "m7"]].to_string(index=False))
+        print("\nscored on %d case(s); correct: M6 as pipeline %d | M6 reading only %d | M7 %d" % (len(m), m.m6_pipeline_correct.sum(), m.m6_reading_only_correct.sum(), m.m7_correct.sum()))
+        print("verdicts changed by the team:", m[m.verdict_changed_by_team].case_id.tolist() or "none")
+        return 0
     from analysis.semantic.llm_client import OpenAICompatibleClient
     client = OpenAICompatibleClient(base_url=args.base_url, model=args.model, api_key=os.environ.get("LLM_API_KEY", "ollama"))
     cases = pd.read_csv(args.cases, dtype=str).fillna("")

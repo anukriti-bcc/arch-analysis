@@ -146,3 +146,16 @@ expected verdicts are a **draft written by the person who built the cases**; two
 **M7 on the seven: pending.** `real_adr_case_study_cells.txt` runs it on Kaggle (7 model calls, Internet on, frozen-code check included). Whatever it
 produces is reported with these caveats: seven cases, draft labels from the builder, one small quantised model.
 
+## Team workflow to finish the real-ADR part (in this order; the order matters)
+
+1. **Label the sample independently.** Fill `annotation_sheet.csv` (60 rows) using the three questions above. Do not open `indicative_labels_claude.csv` first.
+2. **Review the 7 draft verdicts, before any model output is seen.** In `cases.csv`, read each case (ADR link, flagged dependency, rule), then set
+   `reviewed_by_team` to `yes`; where you disagree with the draft `expected`, write your verdict in `team_expected` (`violation` or `justified`, or `exclude`
+   if the case is too ambiguous), with a reason in `team_notes`. Pay most attention to C04 and C06 (marked debatable).
+3. **Run the model part on Kaggle** with `real_adr_case_study_cells.txt` (3 cells, 7 model calls). It uses the draft cases embedded in the cell,
+   which is deliberate: your review stays independent of the model's answers.
+4. **Score against your verdicts (no model needed):**
+   `python -m experiments.real_adrs.case_study --cases <your reviewed cases.csv> --rescore results/real_adrs_case_study/results.csv`
+5. **Compare labels:** `python -m experiments.real_adrs.agreement --sheet <your filled sheet> --other results/real_adrs/indicative_labels_claude.csv --out agreement.json`.
+6. Report **both** label sets, the kappa, the disagreements, and the case-study table with the verdicts the team changed.
+

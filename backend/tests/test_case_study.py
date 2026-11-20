@@ -69,3 +69,15 @@ def test_the_committed_cases_file_is_well_formed():
     assert set(cases.expected) <= {"violation", "justified"} and set(cases.debatable) <= {"yes", "no"}
     assert cases.adr_sha256.str.fullmatch(r"[0-9a-f]{64}").all() and cases.commit.str.fullmatch(r"[0-9a-f]{40}").all()
     assert (cases.reviewed_by_team == "").all()  # the draft has not been reviewed yet; the team fills this column
+
+
+def test_rescoring_uses_the_teams_reviewed_verdicts_and_can_exclude_cases():
+    results = pd.DataFrame({"case_id": ["C1", "C2", "C3"], "expected": ["violation", "violation", "justified"], "m6_pipeline": ["violation"] * 3,
+                            "m6_reading_only": ["unclear"] * 3, "m7": ["violation", "justified", "justified"]})
+    cases = pd.DataFrame({"case_id": ["C1", "C2", "C3"], "expected": ["violation", "violation", "justified"],
+                          "team_expected": ["", "justified", "exclude"], "reviewed_by_team": ["yes", "yes", "yes"]})
+    m = cs.rescore(results, cases)
+    assert m.case_id.tolist() == ["C1", "C2"]                       # C3 excluded by the team
+    assert m.final_expected.tolist() == ["violation", "justified"]  # C2's draft verdict was overruled
+    assert m.m7_correct.tolist() == [True, True] and m.m6_pipeline_correct.tolist() == [True, False]
+    assert m.verdict_changed_by_team.tolist() == [False, True]
