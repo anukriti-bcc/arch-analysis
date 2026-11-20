@@ -60,3 +60,35 @@ On the confirmation seeds M8 also improves the policy-quality metrics: calls ove
   rounds of changes were made there (logged in `ANALYSIS_PLAN.md`). Only the confirmation seeds and the held-out wording are
   independent of that, and the latter is a single 60-case draw.
 * Still one model, a generated benchmark, and (gap #9) no run on real ADR text.
+
+## Scored top-k escalation (hand-weighted or learned): tested, and why it is not the method
+
+Proposal: score each finding from evidence metadata (ADR match strength, status, date relation, commit signals, reintroduction,
+age), escalate the top k, sweep k, compare with random. Tested offline on all 480 structural violations of the five hard-tier
+seeds plus primary and held-out wording (`experiments/scorer_features.py`, `experiments/scorer_study.py`, output in
+`results/scorer_study/`). Target: "the static flag is a false positive" (ground truth justified); the candidate set is the 375
+findings the v1 policy escalates, 156 of them justified. Every scorer is judged on **pooled leave-one-scenario-out** predictions
+(a scorer never sees the scenario it scores), so a scorer that decodes the generator is exposed.
+
+| Scorer | AUC | Calls to capture 95% of false positives |
+|---|---|---|
+| Oracle | 1.00 | 156 |
+| Random | 0.50 | about 356 |
+| Hand-weighted metadata score, fixed in advance | 0.73 | 323 |
+| Logistic regression, all features | 0.60 | 324 |
+| Logistic regression, metadata only | 0.49 | 323 |
+| Gradient boosting (depth 2), all features | 0.32 | 368 |
+
+* A learned scorer trained on dev and tested on seeds 11-13 looks excellent (AUC 0.96, held-out wording 1.00) and collapses to
+  0.32-0.60 when it must score a scenario it never saw. That is the generator-decoding failure, measured.
+* Metadata alone is at chance (0.49) inside the candidate set: whether an ADR actually permits a dependency is in its text, not in
+  its status, date or the commit message. The one signal that carries it is reading the text, which is what the gates and the
+  model do. So a metadata top-k can save at most about 9% of calls at 95% capture (hand-weighted 323 vs random 356), while M8's
+  routing saves about 9% on the hard tier with no silent errors and a safety property a ranking cannot give (a ranking has no
+  notion of "decide without the model").
+* Consequence for the project: the contribution is the readability gate, and "metadata cannot say when a model is needed" is a
+  finding in its own right. scikit-learn is used here for a genuine experiment rather than decoration.
+* Ties: many findings share a score (all strong-ADR cases), so top-k is arbitrary among them; the capture figures above average
+  over random tie-breaks.
+* Not adopted from the proposals: passing computed date/status/scope facts to the model (M7 already does: scenario D is 18 of 18;
+  "3 of 6" was M5 before M7), and keeping the M6 baseline (already in every table).

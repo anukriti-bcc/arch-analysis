@@ -145,3 +145,4 @@ and share its cache, so the extra cost over the M7 run is zero.
 **What would count against M8:** P3 failing means the gates do not generalise as a safety mechanism; P1 failing means a gate
 removes a call the model needed. Either is reported as a finding.
 
+| 2026-11-21 | **Scored top-k escalation (hand-weighted and learned) evaluated offline and not adopted** (`experiments/scorer_study.py`, `results/scorer_study/`, section at the end of `GATED_POLICY_RESULTS.md`). Pooled leave-one-scenario-out AUC: hand-weighted 0.73, logistic regression 0.60 (0.49 on metadata only), gradient boosting 0.32; a scorer trained on dev and tested on seeds 11-13 reached 0.96 but does not transfer to unseen scenarios. At 95% capture the best ranking needs 323 of 375 candidate calls vs about 356 for random. | Two outside proposals suggested ranking by a metadata score. Tested instead of assumed; negative result reported. No frozen file changed. |
