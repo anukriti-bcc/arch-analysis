@@ -24,7 +24,7 @@ held-out run and the confirmation seeds. This file records, gap by gap, what has
 
 ## Findings since the assessment that were not on its list
 
-* **M7 is weak on mixed ADRs** that permit one module and forbid another (scenario M: 11 of 18). The errors are in the dangerous direction (a real
+* **Mixed ADRs (scenario M): fixed in code, pending fresh-seed confirmation.** M7/M8 were 11 of 18; the stance-attribution check (`M8_gated_attr`) is 18 of 18 on seeds 11-13 with no harm (see `GATED_POLICY_RESULTS.md`). Originally: M7 was weak on mixed ADRs that permit one module and forbid another (11 of 18). The errors are in the dangerous direction (a real
   violation called justified). A fix needs a new prompt version and fresh seeds.
 * **The LLM's value is conditional on how irregular ADR text is** (see the table in `docs/HELDOUT_RESULTS.md`). Real ADR corpora are the missing evidence.
 * **Prompt wording is fragile at this model size.** Three extraction prompt versions moved individual scenarios by up to 5 of 12 cases; the final fix was
