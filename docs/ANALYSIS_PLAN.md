@@ -131,7 +131,7 @@ extraction is worse than free-form judgement elsewhere. Both would be reported a
 ## M8 fresh-seed confirmation protocol (written 2026-11-20, before any fresh-seed result exists)
 
 **Data.** Hard tier, benchmark seeds 41, 42, 43 (216 cases; never generated or run), pooled with `experiments.combine_runs`. Run
-`--methods static,deterministic_adr,evidence_guided,extract_compute,gated` once with the frozen code (`m8-gated-frozen`; hashes
+`--methods static,deterministic_adr,evidence_guided,extract_compute,gated,gated_attr` once with the frozen code (`m8-gated-frozen`; hashes
 in `docs/frozen_m8_gated_sha256.json`), same model and prompt version as the M7 confirmation. M8's model calls are a subset of M7's
 and share its cache, so the extra cost over the M7 run is zero.
 
@@ -141,8 +141,16 @@ and share its cache, so the extra cost over the M7 run is zero.
 * **P3 (safety).** At most 2 wrong verdicts among findings decided without the model.
 * **P4 (capture).** M8 escalates at least 95% of the static false positives.
 * **P5 (reproduction).** The replayed M8 rows agree with the live M8 rows (same predictions on every finding).
+* **P6 (attribution fix).** On scenario M (18 cases), `M8_gated_attr` is correct on at least 16, against 11 of 18 for M8/M7 on seeds 11-13.
+* **P7 (no harm).** In no scenario does `M8_gated_attr` get more than 1 case fewer correct than `M8_gated`, and the check rejects no
+  case whose truth is justified.
+* **P8 (replay = live for the check).** Applying `experiments.replay_attribution` to the recorded M8 rows gives the same predictions as the live `M8_gated_attr` rows.
 
 **What would count against M8:** P3 failing means the gates do not generalise as a safety mechanism; P1 failing means a gate
 removes a call the model needed. Either is reported as a finding.
 
 | 2026-11-21 | **Scored top-k escalation (hand-weighted and learned) evaluated offline and not adopted** (`experiments/scorer_study.py`, `results/scorer_study/`, section at the end of `GATED_POLICY_RESULTS.md`). Pooled leave-one-scenario-out AUC: hand-weighted 0.73, logistic regression 0.60 (0.49 on metadata only), gradient boosting 0.32; a scorer trained on dev and tested on seeds 11-13 reached 0.96 but does not transfer to unseen scenarios. At 95% capture the best ranking needs 323 of 375 candidate calls vs about 356 for random. | Two outside proposals suggested ranking by a metadata score. Tested instead of assumed; negative result reported. No frozen file changed. |
+
+| 2026-11-21 | **Stance-attribution check for mixed decisions (`analysis/semantic/attribution.py`, method `M8_gated_attr`).** Scenario M (one decision permits another module and requires the flagged one to keep to the rule) was 11 of 18 for M7/M8: in 7 cases the model answered "permits, covers this module: yes" and the other module's permission was applied to the flagged one. A code check, no prompt change and no extra call: when a decision names modules other than this dependency's two ends, a "permits" reading is accepted only if a clause that mentions THIS module carries a permitting cue; otherwise it becomes `does_not_address` and the computation returns a violation. | Gap C. Chosen over a new prompt because the failure is one of attribution that code can verify (the same division of labour as the date check), and because a prompt change cannot be tested here without a model. |
+| 2026-11-21 | **Provenance of the attribution check.** Developed on hard seeds 21 and 22 only (2 errors to fix). One bug found there: the reader's sentence splitter does not break before a backticked name, so both clauses of the mixed decision were one "sentence" and nothing was rejected; the check now uses its own clause splitter. Frozen at tag `attribution-frozen` before any other data was touched. Then, replayed from the recorded M8 rows: **seeds 11-13: scenario M 11 -> 18 of 18, F1 0.975 -> 1.000, 7 readings rejected, none of them justified, no extra call; held-out wording: no change (0 rejected; it contains no mixed decisions, so it gives no blind evidence for this fix).** Replay outputs: `results/m8_attr_replay/`. | Caveat for the report: the generator writes the mixed decisions in one template ("`X` may use ... . `Y` must keep going through the proper layer"), so the 18 of 18 shows the check works on that shape, not on arbitrary real-world mixed ADRs (a permission in a sentence that only says "it", or phrased outside the cue lexicon, would be read as a violation: the safe direction, and listed in the module docstring). |
+

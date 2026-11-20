@@ -29,10 +29,10 @@ from analysis.semantic.llm_client import (
 )
 from analysis.semantic.prompts import PROMPT_VERSION
 from analysis.policy.gated import ReadabilityGatedPolicy
-from experiments import metrics, pipeline, pipeline_m8
+from experiments import metrics, pipeline, pipeline_m8, pipeline_m8_attr
 from experiments.mock_llm import mock_model
 
-ALL_METHODS = ["static", "llm_only", "full_hybrid", "generic_selective", "evidence_guided", "no_history", "no_intent", "deterministic_adr", "extract_compute", "gated"]
+ALL_METHODS = ["static", "llm_only", "full_hybrid", "generic_selective", "evidence_guided", "no_history", "no_intent", "deterministic_adr", "extract_compute", "gated", "gated_attr"]
 
 
 class BudgetExceeded(RuntimeError):
@@ -105,6 +105,10 @@ def build_paired_comparisons(preds: pd.DataFrame, splits: list[str], n_boot: int
     if m8 in methods:  # M8 (readability-gated escalation) against the methods it is meant to improve on
         frames += [metrics.paired_bootstrap(preds, sp, [m8], [b], n_boot) for sp in splits
                    for b in ("M7_extract_compute", m5, "M3_full_hybrid", "M6_deterministic_adr", "M1_static") if b in methods]
+    m8a = "M8_gated_attr"
+    if m8a in methods:  # the attribution check against what it modifies (M8) and against the frozen M7
+        frames += [metrics.paired_bootstrap(preds, sp, [m8a], [b], n_boot) for sp in splits
+                   for b in ("M8_gated", "M7_extract_compute") if b in methods]
     frames = [f for f in frames if not f.empty]
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
 
@@ -181,6 +185,9 @@ def main(argv=None) -> int:
         if "gated" in wanted:
             decisions = pipeline_m8.route_all(contexts, ReadabilityGatedPolicy(), args.budget)
             for c in contexts: rows += pipeline_m8.run_gated(c, client, decisions, variant=args.prompt_variant)
+        if "gated_attr" in wanted:
+            decisions_a = pipeline_m8.route_all(contexts, ReadabilityGatedPolicy(), args.budget)
+            for c in contexts: rows += pipeline_m8_attr.run_gated_attr(c, client, decisions_a, variant=args.prompt_variant)
         if "no_history" in wanted:
             for c in contexts: rows += pipeline.run_evidence_guided(c, client, method="A1_no_history", use_history=False, variant=args.prompt_variant)
         if "no_intent" in wanted:

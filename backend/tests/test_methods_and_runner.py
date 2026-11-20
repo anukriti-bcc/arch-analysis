@@ -201,7 +201,7 @@ def test_runner_writes_paired_comparisons_and_density_sweep(mini_benchmark, tmp_
     paired = pd.read_csv(out / "paired_comparisons.csv")
     assert {"M1_static", "M2_llm_only", "M3_full_hybrid", "A1_no_history", "A2_no_intent"} <= set(paired["b"].str.split("+").str[0]) | set(paired["b"])
     assert {"f1", "llm_calls"} <= set(paired["metric"])
-    assert set(paired["a"]) == {"M5_evidence_guided", "M7_extract_compute", "M8_gated"}  # M7 minus M5 isolates extract-then-compute; M8 is routing-only
+    assert set(paired["a"]) == {"M5_evidence_guided", "M7_extract_compute", "M8_gated", "M8_gated_attr"}  # M7 minus M5 isolates extract-then-compute; M8 is routing-only
     assert ((paired["a"] == "M7_extract_compute") & (paired["b"] == "M5_evidence_guided")).any()
     assert not ((paired["a"] == "M5_evidence_guided") & (paired["b"] == "M7_extract_compute")).any()  # no duplicate in the other direction
     density = pd.read_csv(out / "density_sweep.csv")

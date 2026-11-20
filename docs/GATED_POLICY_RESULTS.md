@@ -92,3 +92,21 @@ findings the v1 policy escalates, 156 of them justified. Every scorer is judged 
   over random tie-breaks.
 * Not adopted from the proposals: passing computed date/status/scope facts to the model (M7 already does: scenario D is 18 of 18;
   "3 of 6" was M5 before M7), and keeping the M6 baseline (already in every table).
+
+## Mixed decisions: the stance-attribution check (`M8_gated_attr`)
+
+M7 and M8 got 11 of 18 on scenario M. All 7 errors had the same shape: the model reported "permits, covers this module" for a
+decision that permits one module and requires the flagged one to keep to the rule. `analysis/semantic/attribution.py` checks this
+in code: when the decision names other modules, a permission must be stated in a clause about this module.
+
+| Seeds 11-13 (216 cases) | F1 | Scenario M correct | Calls |
+|---|---|---|---|
+| M8 (frozen) | 0.975 | 11 / 18 | 156 |
+| M8 + attribution check | **1.000** | **18 / 18** | 156 |
+
+Seven readings were rejected, none for a justified dependency. On dev seeds 21+22 it fixed both errors (F1 0.989 -> 1.000). The
+held-out wording has no mixed decisions, so there it changes nothing (F1 0.988 both) and is not evidence for the fix. A decision
+that only says "it may" in a following sentence, or permits in words outside the cue list, would be read as a violation; that is
+the safe direction and the main limit. The generator uses one template for mixed decisions, so this shows the check works on that
+shape; the fresh-seed run (P6 to P8) and the real-ADR run (B) are the tests of generality.
+
