@@ -38,6 +38,11 @@ class ArchitectureRule:
             "description": self.description,
         }
 
+    @classmethod
+    def from_dict(cls, d: dict) -> "ArchitectureRule":
+        return cls(id=d["id"], name=d["name"], source=d["source"], target=d["target"], relation=RelationType(d["relation"]),
+                   description=d.get("description", ""))
+
 
 @dataclass(frozen=True)
 class Architecture:
@@ -45,6 +50,13 @@ class Architecture:
 
     name: str
     rules: tuple[ArchitectureRule, ...]
+
+    def to_dict(self) -> dict:
+        return {"name": self.name, "rules": [r.to_dict() for r in self.rules]}
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Architecture":
+        return cls(name=d["name"], rules=tuple(ArchitectureRule.from_dict(r) for r in d["rules"]))
 
     def rules_for(self, source_type: str, target_type: str) -> list[ArchitectureRule]:
         return [

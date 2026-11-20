@@ -25,7 +25,8 @@ from api.schemas.analyze import (
 )
 from models.rule import RelationType
 from rules.loader import ArchitectureFileError, load_architecture_file
-from storage.memory_store import AnalysisRun, now_iso, store
+from storage import store
+from storage.memory_store import AnalysisRun, now_iso
 
 router = APIRouter()
 
@@ -129,7 +130,7 @@ def analyze_repository(request: AnalyzeRequest) -> AnalyzeResponse:
 
 @router.get("/analysis", response_model=list[AnalysisSummary])
 def list_analyses() -> list[AnalysisSummary]:
-    return [AnalysisSummary(**run.summary()) for run in store.list_all()]
+    return [AnalysisSummary(**summary) for summary in store.list_summaries()]
 
 
 @router.get("/analysis/{analysis_id}", response_model=AnalysisSummary)
@@ -201,6 +202,7 @@ def _gather(finding, aggregator):
     bundle = aggregator.build(finding)
     finding.evolution_evidence = bundle.evolution
     finding.architectural_intent = {"rule": bundle.to_dict()["rule"], "adrs": [m.to_dict() for m in bundle.adrs]}
+    store.update_finding(finding)  # a database store must persist evidence attached after the run was saved
     return bundle, _policy.decide(bundle)
 
 
@@ -211,6 +213,7 @@ def get_finding_evolution(finding_id: str, analysis_id: str | None = None) -> di
     finding, run = _find(finding_id, analysis_id)
     if finding.evolution_evidence is None:
         finding.evolution_evidence = _evolution_analyzer.analyze(run.repository_path, finding)
+        store.update_finding(finding)
     return {"finding_id": finding_id, "analysis_id": run.id, "evolution_evidence": finding.evolution_evidence}
 
 
@@ -300,6 +303,7 @@ def request_semantic_analysis(finding_id: str, analysis_id: str | None = None, f
         finding.semantic_analysis = None
         finding.decision = {**decision.to_dict(), "forced": False, "llm_called": False,
                             "final_verdict": decision.direct_verdict, "outcome_source": "direct", "resolution": "direct"}
+    store.update_finding(finding)
     return {"finding_id": finding_id, "analysis_id": run.id, "decision": finding.decision,
             "semantic_analysis": finding.semantic_analysis, "evolution_evidence": finding.evolution_evidence,
             "evidence": bundle.to_dict()}

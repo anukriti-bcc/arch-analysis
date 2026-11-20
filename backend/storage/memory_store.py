@@ -1,12 +1,7 @@
 """
-In-memory storage for analysis runs.
+In-memory storage for analysis runs (the default when DATABASE_URL is not set).
 
-currentplan.docx lists PostgreSQL as the eventual database, storing
-repositories/components/dependencies/rules/findings/commits/evidence
-long-term. That's not on the critical path for the mid-viva demo, so
-Milestone 1 keeps analysis runs in memory behind this one module. If/when
-persistence is added, only this file needs to change — the API layer
-already treats it as a black box with get/save/list.
+PostgreSQL persistence lives in storage/postgres_store.py behind the same interface; storage/__init__.py chooses between them.
 """
 from __future__ import annotations
 
@@ -52,6 +47,8 @@ class AnalysisRun:
 
 
 class _MemoryStore:
+    backend = "memory"
+
     def __init__(self) -> None:
         self._runs: dict[str, AnalysisRun] = {}
         self._findings: dict[tuple[str, str], Finding] = {}
@@ -74,6 +71,15 @@ class _MemoryStore:
 
     def list_all(self) -> list[AnalysisRun]:
         return list(self._runs.values())
+
+    def list_summaries(self) -> list[dict]:
+        return [run.summary() for run in self._runs.values()]
+
+    def update_finding(self, finding: Finding) -> None:
+        """No-op: runs hold the finding objects themselves, so changes are already stored. (A database store must write them.)"""
+
+    def ping(self) -> bool:
+        return True
 
     def get_finding(self, finding_id: str, analysis_id: str | None = None) -> Finding | None:
         """Look up a finding. With analysis_id the lookup is exact. Without it

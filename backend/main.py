@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes.analyze import router as analyze_router
 from api.routes.experiments import router as experiments_router
+from storage import store
 
 app = FastAPI(
     title="Architecture Analysis Engine",
@@ -32,3 +33,9 @@ def root() -> dict:
         "milestone": "2-5",
         "docs": "/docs",
     }
+
+
+@app.get("/health")
+def health() -> dict:
+    """Liveness plus the storage backend in use ("memory" or "postgresql") and whether it answers. Used by the Docker healthcheck."""
+    return {"status": "ok", "storage": store.describe()}

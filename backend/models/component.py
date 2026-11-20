@@ -55,6 +55,10 @@ class Component:
             "language": self.language,
         }
 
+    @classmethod
+    def from_dict(cls, d: dict) -> "Component":
+        return cls(id=d["id"], name=d["name"], path=d["path"], architectural_type=d["architectural_type"], language=d["language"])
+
 
 class DependencyType(str, Enum):
     IMPORT = "import"  # `import x` / `from x import y` — Milestone 1
@@ -70,6 +74,10 @@ class SourceLocation:
 
     def to_dict(self) -> dict:
         return {"file": self.file, "line": self.line}
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "SourceLocation":
+        return cls(file=d["file"], line=d["line"])
 
 
 @dataclass(frozen=True)
@@ -94,3 +102,8 @@ class Dependency:
             "location": self.location.to_dict(),
             "raw_reference": self.raw_reference,
         }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Dependency":
+        return cls(source=d["source"], target=d["target"], source_component=d["source_component"], target_component=d["target_component"],
+                   dependency_type=DependencyType(d["type"]), location=SourceLocation.from_dict(d["location"]), raw_reference=d.get("raw_reference", ""))

@@ -3,7 +3,7 @@
 The assessment (`project_assessment_gaps.md`) was written against the repository as it stood before M6, M7, the hard tier, the
 held-out run and the confirmation seeds. This file records, gap by gap, what has changed and what has not. Dated: 2026-11-16.
 
-**Summary: 3 fixed, 3 partly fixed, 7 not fixed, 1 deliberately excluded (the supervisor diary, which must be real).**
+**Summary: 3 fixed, 4 partly fixed, 6 not fixed (one of those, #6, is measured but not fixed), 1 deliberately excluded (the supervisor diary, which must be real).**
 
 | # | Gap | Status | What changed / what remains |
 |---|---|---|---|
@@ -17,7 +17,7 @@ held-out run and the confirmation seeds. This file records, gap by gap, what has
 | 8 | Evolution is shallow | **Not fixed** | Per-dependency only; renames flagged not tracked; history truncated at 1000 commits. |
 | 9 | Real-repository evidence does not test the research question | **Not fixed; partly informed** | Still sqlfluff only for conformance, with no ADR text and no LLM. What changed: a real-ADR corpus now shows that dependency-governing ADRs are rare (3-10% in a hand-read sample of 60) and that M6 could not read the six found. No language model has been run on real ADRs yet. |
 | 10 | Narrow dependency scope | **Not fixed** | Direct Python imports; allowed/forbidden rules only. |
-| 11 | Stack deviations from the synopsis | **Not fixed** (documented) | JavaScript not TypeScript; in-memory store not PostgreSQL; Docker never run; scikit-learn used only in tests. Listed in the README deviations table. |
+| 11 | Stack deviations from the synopsis | **Partly fixed** | **PostgreSQL: done** (`storage/postgres_store.py`, tested against a real PostgreSQL 16 server, including identical API behaviour to the memory store and persistence across restarts). **Docker: configured** (db + backend + frontend, healthchecks, volume) with a smoke script, but the containers have **not been run by the author**; static wiring tests and a process-level run of the same script pass. **Still open: TypeScript** (frontend is JavaScript). scikit-learn is used in the real-ADR agreement tool and the metrics cross-check tests, not in the main pipeline. |
 | 12 | Supervisor diary empty | **Excluded** | Must be real entries by the team. |
 | 13 | Pre-registration claim not provable | **Partly fixed** | The repository now has a Git history (first commit `642b2b1`, 2026-11-14, containing the plan), the plan's status table is filled in truthfully, M7's freeze is recorded with file hashes and a tag, and the order plan -> freeze -> confirmation -> held-out is visible in commits. Work before 2026-11-14 is not provable from Git, the primary run is exploratory by the plan's own account, and commit metadata comes from the machine that made the commits. |
 | 14 | Docs stale | **Fixed** (except diary and report outline, left by request) | README, COMPLIANCE, PROGRESS, EXPERIMENTS, VIVA_DEMO counts and the notebook text updated. |

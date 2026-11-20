@@ -39,6 +39,10 @@ class StructuralEvidence:
             "rule_id": self.rule_id,
         }
 
+    @classmethod
+    def from_dict(cls, d: dict) -> "StructuralEvidence":
+        return cls(dependency=Dependency.from_dict(d["dependency"]), rule_id=d.get("rule_id"))
+
 
 @dataclass
 class Finding:
@@ -89,3 +93,14 @@ class Finding:
             "semantic_analysis": self.semantic_analysis,
             "decision": self.decision,
         }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Finding":
+        """Inverse of to_dict (used by persistent storage)."""
+        ev = d.get("structural_evidence")
+        return cls(
+            id=d["id"], status=FindingStatus(d["status"]), source=d["source"], target=d["target"], expected=d["expected"], observed=d["observed"],
+            rule_id=d.get("rule_id"), severity=Severity(d["severity"]), structural_evidence=StructuralEvidence.from_dict(ev) if ev else None,
+            architectural_intent=d.get("architectural_intent"), evolution_evidence=d.get("evolution_evidence"),
+            semantic_analysis=d.get("semantic_analysis"), decision=d.get("decision"), location=d.get("location"), key=d.get("key", ""),
+            analysis_id=d.get("analysis_id"))
