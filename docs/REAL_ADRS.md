@@ -116,17 +116,28 @@ stance is not evidence of understanding. (In the pipeline M6 first requires a st
 * One rater, one sample of 60, 10 to 11 repositories. Percentages have wide intervals; differences between repositories are not analysed.
 * The 2025-26 AI-agent-era sample was profiled by the same code (tier shares 6.4% / 13.8% / 79.9%, 51% "unclear" for M6) but is not validated and is not used.
 
-## For the team: the independent labelling (about 40 minutes)
+## Second labelling pass (2026-11-21) and who did what
 
-Open `results/real_adrs/annotation_sheet.csv` (60 rows, decision excerpts with source URLs). **Do not look at `indicative_labels_claude.csv` first.** Fill:
+The team did not have time to label the sample. Rather than leave it single-rater, a **second, separate AI pass** was done: Claude labelled
+all 60 excerpts in `results/real_adrs/annotation_sheet_claude_pass2.csv` **without opening the first pass's labels**, and the two were compared
+afterwards (`results/real_adrs/agreement_claude_pass1_vs_pass2.json`). **Both passes are AI labels. No human has labelled this sample, and
+the files say so (columns `annotator`, `labelled_on`).** They are not independent in the strong sense: the same model family, the same
+instructions, and the same author context wrote the analysis code.
 
-* **Q1_about_dependencies**: does the decision restrict or permit which parts of the system (modules, layers, services, packages) may depend on, call or
-  import each other? `yes` (explicitly), `partly` (defines structure or responsibilities but no explicit restriction), `no`.
-* **Q2_exception_or_condition**: does it grant an exception or a condition (a date, "temporary", "legacy", "for now")? `yes` / `no`.
-* **Q3_wording**: `templated` (regular wording, like the benchmark ADRs), `plain paraphrase`, or `irregular` (narrative, hedged, mixed).
+| | Pass 1 (`indicative_labels_claude.csv`) | Pass 2 (blind to pass 1) |
+|---|---|---|
+| Clearly about dependencies (yes) | 2 of 60 (3.3%) | **3 of 59 (5.1%, 95% CI 1.7% to 13.9%)** (R006 has no decision text and is unlabelled) |
+| At least partly (yes or partly) | 6 of 60 (10%) | **11 of 59 (18.6%, CI 10.7% to 30.4%)** |
 
-Then run `python -m experiments.real_adrs.agreement --sheet <your sheet> --other results/real_adrs/indicative_labels_claude.csv`. Report both sets of labels,
-the kappa, and the disagreements; use the team's own labels for the prevalence figure in the report.
+Agreement between the passes: 59 compared, raw 3-class 0.90, **kappa 0.61**; dependency-or-not (yes/partly vs no): raw 0.92, **kappa 0.66**.
+All 6 disagreements are borderline calls between "partly" and "no" (R003, R013, R040, R042, R043) or "yes" and "partly" (R034). The robust
+conclusion is unchanged and is stated as a range: **dependency-governing ADRs are a small minority (roughly 3% to 19% depending on how
+"partly" is counted)**. Q2 and Q3 were labelled in pass 2 only and have not been compared with anything.
+
+**What a human could still add (optional, about 15 minutes):** label the 6 disagreement rows (R003, R013, R034, R040, R042, R043) and the
+3 lowest-confidence cases below (C03, C04, C06) in `annotation_sheet_claude_pass2.csv` / `cases_reviewed_claude.csv` (fill `team_expected`
+and set `reviewed_by_team` to `yes`). One human tie-break on those few rows would let the report say "AI labels, with a human adjudicating
+the disagreements"; without it the report must say "two AI passes" and treat the percentages as indicative.
 
 ## Case study: 7 hand-built cases from real ADRs (time-boxed; M7 part not yet run)
 
@@ -146,16 +157,15 @@ expected verdicts are a **draft written by the person who built the cases**; two
 **M7 on the seven: pending.** `real_adr_case_study_cells.txt` runs it on Kaggle (7 model calls, Internet on, frozen-code check included). Whatever it
 produces is reported with these caveats: seven cases, draft labels from the builder, one small quantised model.
 
-## Team workflow to finish the real-ADR part (in this order; the order matters)
+## Finishing the real-ADR part (current state)
 
-1. **Label the sample independently.** Fill `annotation_sheet.csv` (60 rows) using the three questions above. Do not open `indicative_labels_claude.csv` first.
-2. **Review the 7 draft verdicts, before any model output is seen.** In `cases.csv`, read each case (ADR link, flagged dependency, rule), then set
-   `reviewed_by_team` to `yes`; where you disagree with the draft `expected`, write your verdict in `team_expected` (`violation` or `justified`, or `exclude`
-   if the case is too ambiguous), with a reason in `team_notes`. Pay most attention to C04 and C06 (marked debatable).
-3. **Run the model part on Kaggle** with `real_adr_case_study_cells.txt` (3 cells, 7 model calls). It uses the draft cases embedded in the cell,
-   which is deliberate: your review stays independent of the model's answers.
-4. **Score against your verdicts (no model needed):**
-   `python -m experiments.real_adrs.case_study --cases <your reviewed cases.csv> --rescore results/real_adrs_case_study/results.csv`
-5. **Compare labels:** `python -m experiments.real_adrs.agreement --sheet <your filled sheet> --other results/real_adrs/indicative_labels_claude.csv --out agreement.json`.
-6. Report **both** label sets, the kappa, the disagreements, and the case-study table with the verdicts the team changed.
-
+1. **Sample labelling:** done as two AI passes (section above); no human labels exist.
+2. **The 7 draft verdicts:** reviewed by Claude against the pinned ADR texts (`datasets/real_adrs_case_study/cases_reviewed_claude.csv`,
+   columns `claude_expected`, `claude_confidence`, `claude_notes`). **Agreement with the draft: 7 of 7.** This is a consistency check only: the
+   reviewer read the drafts first and is the same model family as the drafter. Confidence: high for C01 and C02; medium-high C05; medium for
+   C03, C04, C06 and C07 (reasons in the file; C03's flagged rule is the builder's own and the import may be legitimate persistence code, so it is
+   scored only as "the ADR grants no permission").
+3. **Run the model part:** notebook cell 9e (7 calls, Internet on). It uses `cases_reviewed_claude.csv`.
+4. **Score:** `python -m experiments.real_adrs.case_study --cases ../datasets/real_adrs_case_study/cases_reviewed_claude.csv --rescore <results.csv>`.
+5. In the report give the case-study table with the provenance in one line: "verdicts drafted by the case builder and reviewed by an AI
+   assistant; not human-adjudicated".
