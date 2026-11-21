@@ -134,10 +134,10 @@ All 6 disagreements are borderline calls between "partly" and "no" (R003, R013, 
 conclusion is unchanged and is stated as a range: **dependency-governing ADRs are a small minority (roughly 3% to 19% depending on how
 "partly" is counted)**. Q2 and Q3 were labelled in pass 2 only and have not been compared with anything.
 
-**What a human could still add (optional, about 15 minutes):** label the 6 disagreement rows (R003, R013, R034, R040, R042, R043) and the
-3 lowest-confidence cases below (C03, C04, C06) in `annotation_sheet_claude_pass2.csv` / `cases_reviewed_claude.csv` (fill `team_expected`
-and set `reviewed_by_team` to `yes`). One human tie-break on those few rows would let the report say "AI labels, with a human adjudicating
-the disagreements"; without it the report must say "two AI passes" and treat the percentages as indicative.
+**What a human could still add (optional, about 10 minutes):** label the 6 disagreement rows (R003, R013, R034, R040, R042, R043) in
+`annotation_sheet_claude_pass2.csv`. One human tie-break on those rows would let the report say "AI labels, with a human adjudicating the
+disagreements"; without it the report must say "two AI passes" and treat the percentages as indicative. (The 7 case verdicts already have a human
+review, below.)
 
 ## Case study: 7 hand-built cases from real ADRs (time-boxed; M7 part not yet run)
 
@@ -160,12 +160,14 @@ produces is reported with these caveats: seven cases, draft labels from the buil
 ## Finishing the real-ADR part (current state)
 
 1. **Sample labelling:** done as two AI passes (section above); no human labels exist.
-2. **The 7 draft verdicts:** reviewed by Claude against the pinned ADR texts (`datasets/real_adrs_case_study/cases_reviewed_claude.csv`,
-   columns `claude_expected`, `claude_confidence`, `claude_notes`). **Agreement with the draft: 7 of 7.** This is a consistency check only: the
-   reviewer read the drafts first and is the same model family as the drafter. Confidence: high for C01 and C02; medium-high C05; medium for
-   C03, C04, C06 and C07 (reasons in the file; C03's flagged rule is the builder's own and the import may be legitimate persistence code, so it is
-   scored only as "the ADR grants no permission").
-3. **Run the model part:** notebook cell 9e (7 calls, Internet on). It uses `cases_reviewed_claude.csv`.
-4. **Score:** `python -m experiments.real_adrs.case_study --cases ../datasets/real_adrs_case_study/cases_reviewed_claude.csv --rescore <results.csv>`.
-5. In the report give the case-study table with the provenance in one line: "verdicts drafted by the case builder and reviewed by an AI
-   assistant; not human-adjudicated".
+2. **The 7 draft verdicts: human review done.** A team member wrote verdicts for all 7 cases independently, **before seeing the draft `expected`
+   column and before any model output** (self-reported), then compared them with the draft: **7 of 7 agree** (`cases_reviewed.csv`, columns
+   `team_expected`, `team_reviewer`, `team_review_basis`; the reviewer's name is not recorded, add it). A separate AI review by Claude
+   (columns `claude_expected`, `claude_confidence`, `claude_notes`) also agrees 7 of 7 but was not blind to the draft. Three-way agreement is
+   therefore: builder's draft, blind human review, AI review. Because the human verdicts equal the draft, no verdict was changed. AI confidence
+   was high for C01 and C02, medium-high for C05, medium for C03, C04, C06 and C07 (reasons in the file; C03's flagged rule is the builder's own
+   and the import may be legitimate persistence code, so it is scored only as "the ADR grants no permission"; C04 and C06 are marked debatable).
+3. **Run the model part:** notebook cell 9e (7 calls, Internet on). It uses `cases_reviewed.csv`.
+4. **Score:** `python -m experiments.real_adrs.case_study --cases ../datasets/real_adrs_case_study/cases_reviewed.csv --rescore <results.csv>`.
+5. In the report give the case-study table with the provenance in one line: "verdicts drafted by the case builder, independently reviewed by a
+   team member before any model output (7/7 agreement) and by an AI assistant (7/7)". Seven cases remain a demonstration, not a rate.
