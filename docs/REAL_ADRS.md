@@ -134,10 +134,13 @@ All 6 disagreements are borderline calls between "partly" and "no" (R003, R013, 
 conclusion is unchanged and is stated as a range: **dependency-governing ADRs are a small minority (roughly 3% to 19% depending on how
 "partly" is counted)**. Q2 and Q3 were labelled in pass 2 only and have not been compared with anything.
 
-**What a human could still add (optional, about 10 minutes):** label the 6 disagreement rows (R003, R013, R034, R040, R042, R043) in
-`annotation_sheet_claude_pass2.csv`. One human tie-break on those rows would let the report say "AI labels, with a human adjudicating the
-disagreements"; without it the report must say "two AI passes" and treat the percentages as indicative. (The 7 case verdicts already have a human
-review, below.)
+**Human verification (in progress, by the team):** `results/real_adrs/review_sheet_for_human_verification.xlsx` lists every excerpt with the AI's
+label and dropdowns for the reviewer to agree (leave empty) or correct; the 6 rows where the AI's two passes disagreed are marked DISPUTED. After
+review, `python -m experiments.real_adrs.ingest_review --review <sheet> --pass2 ../results/real_adrs/annotation_sheet_claude_pass2.csv --out ../results/real_adrs`
+writes `annotation_sheet_verified.csv` and `verification_summary.json` (rows reviewed, labels the human changed per question, AI-vs-human
+agreement, final prevalence with Wilson intervals). The provenance field then reads "AI draft (Claude), verified row by row by a human
+reviewer", and says INCOMPLETE if any row is not marked done. **Report the final labels as "AI-drafted, human-verified", with the number of
+labels the reviewer changed; never as human-labelled.** Until the sheet is returned, the percentages above are AI-only.
 
 ## Case study: 7 hand-built cases from real ADRs (time-boxed; M7 part not yet run)
 
