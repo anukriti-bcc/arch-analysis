@@ -142,7 +142,7 @@ agreement, final prevalence with Wilson intervals). The provenance field then re
 reviewer", and says INCOMPLETE if any row is not marked done. **Report the final labels as "AI-drafted, human-verified", with the number of
 labels the reviewer changed; never as human-labelled.** Until the sheet is returned, the percentages above are AI-only.
 
-## Case study: 7 hand-built cases from real ADRs (time-boxed; M7 part not yet run)
+## Case study: 7 hand-built cases from real ADRs (time-boxed; M7 run 2026-11-22, results below)
 
 `datasets/real_adrs_case_study/cases.csv`, runner `experiments/real_adrs/case_study.py`. Four real ADRs (Protean ADR-0008, modular-monolith-with-ddd ADR-14,
 ADNC ADR-001, educational-platform ADR-12; all MIT or Apache-2.0), each **pinned to a commit and a SHA-256** (the runner refuses text that does not match),
@@ -160,6 +160,42 @@ expected verdicts are a **draft written by the person who built the cases**; two
 **M7 on the seven: pending.** `real_adr_case_study_cells.txt` runs it on Kaggle (7 model calls, Internet on, frozen-code check included). Whatever it
 produces is reported with these caveats: seven cases, draft labels from the builder, one small quantised model.
 
+## Case study results (M7 reading of real ADR text, run 2026-11-22; `results/real_adrs_case_study/`)
+
+Setup: the ADR text is given to M7's extractor directly (reading only), against the 7 verdicts that a team member wrote before seeing the draft or any
+model output (7 of 7 agree with the draft; `cases_reviewed.csv`). Same model as the benchmark (Qwen2.5 7B Q4).
+
+| Case | Truth | M6 as pipeline | M6 reading only | M7 | M7's reason, read critically |
+|---|---|---|---|---|---|
+| C01 | justified | violation | unclear | violation | **Wrong.** Says the ADR prohibits imports in "utility modules" and `telemetry.py` is one; the ADR names that file as the single module allowed to import opentelemetry |
+| C02 | violation | violation | unclear | violation | Sound (core module importing opentelemetry directly) |
+| C03 | violation | violation | unclear | violation | **Right for the wrong reason.** Applies the opentelemetry prohibition to a `sqlalchemy` import; the ADR says nothing about databases |
+| C04 | violation | violation | justified | violation | Sound enough (direct calls between modules are not the decided style) |
+| C05 | violation | violation | unclear | **justified** | **Wrong, in the dangerous direction.** Over-generalises "modular monolith" to permit the cross-module internal reference |
+| C06 | justified | violation | unclear | justified | Right verdict, vague reason ("permits modular monoliths") |
+| C07 | violation | violation | unclear | violation | Sound |
+
+Verdicts correct: M6 as pipeline 5 of 7, M6 reading only 0 of 7, M7 5 of 7. **Read these numbers carefully:**
+* M6 as pipeline says "violation" for all seven (the v1 matcher links the right ADR only for C01 and C02, which name the file), so its 5 of 7 equals the
+  base rate: five of the seven cases are violations. **M7's 5 of 7 is the same number, so this study gives no evidence that M7 beats "always violation".**
+* Only 3 of M7's 7 answers are correct for sound reasons (C02, C04, C07); C03 is correct by confusion and C06 with a vague reason. M7 found 1 of the 2
+  justified cases and 4 of the 5 violations. One of its errors (C05) hides a real violation.
+* **What it does show:** on real, long, multi-topic ADR text the extractor can misattribute scope (C01, C03) and over-generalise a style decision (C05).
+  These are failures that the benchmark's short templated decisions never exposed, so the benchmark F1 (0.97) must not be quoted as expected performance on real ADRs.
+* Seven hand-picked cases are a demonstration, not a rate. No confidence interval is meaningful.
+
+M8's routing on the same seven (frozen code, no model; computed offline): C03 is routed to a structural violation without the model because the ADR is about
+telemetry and does not mention a database library (the right answer for the right reason, where M7 was confused); C01 and C02 are scoped as described and
+fail the `G_clear` gate (no permission or prohibition cue in the decision), so M8 would send them to the model; **C04 to C07 are scoped as "weak" only because
+of a limitation of the frozen code**: the name-matching helper reduces a file path to the text after the last dot, which is right for `.py` and returns `cs` or
+`java` for C# and Java files. The gates and the description-aware scope test therefore work on Python paths only (and the analysis pipeline's parser is
+Python-only in any case). Not changed, because anything altered now would need a fresh confirmation; a v2.1 should split camelCase names and strip
+any extension.
+
+What the case study supports for the report: real ADRs expose reading errors the benchmark did not (honest negative evidence); a grounding step that makes
+the model quote the sentence it relies on (and code verify it names the right module) is the natural next fix; the gates' scope test helped on C03
+but is Python-only. It does not support any claim about M7's accuracy on real ADRs.
+
 ## Finishing the real-ADR part (current state)
 
 1. **Sample labelling:** done as two AI passes (section above); no human labels exist.
@@ -170,7 +206,7 @@ produces is reported with these caveats: seven cases, draft labels from the buil
    therefore: builder's draft, blind human review, AI review. Because the human verdicts equal the draft, no verdict was changed. AI confidence
    was high for C01 and C02, medium-high for C05, medium for C03, C04, C06 and C07 (reasons in the file; C03's flagged rule is the builder's own
    and the import may be legitimate persistence code, so it is scored only as "the ADR grants no permission"; C04 and C06 are marked debatable).
-3. **Run the model part:** notebook cell 9e (7 calls, Internet on). It uses `cases_reviewed.csv`.
+3. **Run the model part: done 2026-11-22** (results above).
 4. **Score:** `python -m experiments.real_adrs.case_study --cases ../datasets/real_adrs_case_study/cases_reviewed.csv --rescore <results.csv>`.
 5. In the report give the case-study table with the provenance in one line: "verdicts drafted by the case builder, independently reviewed by a
    team member before any model output (7/7 agreement) and by an AI assistant (7/7)". Seven cases remain a demonstration, not a rate.
