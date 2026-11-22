@@ -134,13 +134,17 @@ All 6 disagreements are borderline calls between "partly" and "no" (R003, R013, 
 conclusion is unchanged and is stated as a range: **dependency-governing ADRs are a small minority (roughly 3% to 19% depending on how
 "partly" is counted)**. Q2 and Q3 were labelled in pass 2 only and have not been compared with anything.
 
-**Human verification (in progress, by the team):** `results/real_adrs/review_sheet_for_human_verification.xlsx` lists every excerpt with the AI's
-label and dropdowns for the reviewer to agree (leave empty) or correct; the 6 rows where the AI's two passes disagreed are marked DISPUTED. After
-review, `python -m experiments.real_adrs.ingest_review --review <sheet> --pass2 ../results/real_adrs/annotation_sheet_claude_pass2.csv --out ../results/real_adrs`
-writes `annotation_sheet_verified.csv` and `verification_summary.json` (rows reviewed, labels the human changed per question, AI-vs-human
-agreement, final prevalence with Wilson intervals). The provenance field then reads "AI draft (Claude), verified row by row by a human
-reviewer", and says INCOMPLETE if any row is not marked done. **Report the final labels as "AI-drafted, human-verified", with the number of
-labels the reviewer changed; never as human-labelled.** Until the sheet is returned, the percentages above are AI-only.
+**Human verification: NOT established (status 2026-11-22).** Two review sheets came back (`results/real_adrs/received/`). The first was completed by a teammate with an
+AI assistant. The second, sent as a teammate's own review, has the same changes as the first in every cell (6 labels: R013 Q1 partly to no; R017, R021, R048, R050, R060 Q2 no to
+yes) apart from R006 (now labelled no/no) and reworded notes, so its independence cannot be established. **Neither is counted as human verification and their changes are not
+applied; the labels of record remain the AI pass-2 labels** (yes 3 of 59, yes-or-partly 11 of 59; applying the proposed R013 change would give 10 of 60). Report them as "AI-labelled;
+two teammate review sheets agreed with all but 6 labels".
+
+**A small blind check would give real human evidence:** `results/real_adrs/blind_check_for_human.xlsx` has 20 excerpts in shuffled order (all 11 rows the AI labelled yes or
+partly plus 9 random "no" rows), no AI labels shown, and two cells where the reviewer enters their name and whether they used an AI assistant (about 15 minutes, one person, no AI
+assistance). `python -m experiments.real_adrs.ingest_blind_check --sheet <file> --key ../results/real_adrs/blind_check_key.csv --pass2 ../results/real_adrs/annotation_sheet_claude_pass2.csv --out ../results/real_adrs`
+reports agreement and kappa with the AI labels, and flags the result incomplete if the name or declaration is missing. Positives are oversampled, so it measures agreement, not
+prevalence. With it, the report can say "AI-labelled, with a blind human check of 20 rows (kappa X)". Without it: "AI-labelled; not human-verified".
 
 ## Case study: 7 hand-built cases from real ADRs (time-boxed; M7 run 2026-11-22, results below)
 
