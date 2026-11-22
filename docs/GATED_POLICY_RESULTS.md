@@ -1,6 +1,6 @@
 # Readability-gated escalation (policy v2, method M8): design and results
 
-Closes the largest gap in `docs/GAPS_STATUS.md` (#1, "the escalation policy is thin") and part of #6 (ADR matching).
+Closes the largest gap in `docs/GAPS_STATUS.md` (#1, "the escalation policy is thin") and part of #6 (ADR matching). **Confirmed on fresh seeds 41-43 (section at the end): all pre-registered criteria P1-P8 passed.**
 Frozen at tag `m8-gated-frozen` (file hashes: `docs/frozen_m8_gated_sha256.json`). Model answers are those already recorded for
 M7 (Qwen2.5 7B Q4); M8 only changes WHICH findings are escalated (`experiments/replay_policy.py`, checked against a live run in
 `tests/test_gated_policy.py`). Replayed rows: `results/m8_replay/`.
@@ -109,4 +109,42 @@ held-out wording has no mixed decisions, so there it changes nothing (F1 0.988 b
 that only says "it may" in a following sentence, or permits in words outside the cue list, would be read as a violation; that is
 the safe direction and the main limit. The generator uses one template for mixed decisions, so this shows the check works on that
 shape; the fresh-seed run (P6 to P8) and the real-ADR run (B) are the tests of generality.
+
+## Fresh-seed confirmation (seeds 41, 42, 43; 216 cases; run once with the frozen code)
+
+Criteria were written in `ANALYSIS_PLAN.md` before the run. Output saved in `results/m8_fresh_seeds/` (printed notebook output; raw predictions not retained, see its README).
+
+| Method | F1 (95% CI) | Calls |
+|---|---|---|
+| M1 static | 0.800 (0.751 to 0.845) | 0 |
+| M6 deterministic ADR reader | 0.588 (0.510 to 0.655) | 0 |
+| M3 full hybrid | 0.894 (0.851 to 0.930) | 216 |
+| M5 evidence-guided (v1 policy) | 0.914 (0.877 to 0.946) | 171 |
+| M7 extract-then-compute (v1 policy) | 0.968 (0.946 to 0.987) | 171 |
+| **M8 gated routing** | **0.972 (0.951 to 0.989)** | **156** |
+| **M8 + attribution check** | **0.990 (0.976 to 1.000)** | **156** |
+
+| Criterion | Result |
+|---|---|
+| P1 no regression, M8 minus M7 F1, lower bound above -0.02 | PASS, +0.004 (95% CI +0.000 to +0.011) |
+| P2 saving, M8 minus M7 calls, upper bound below 0 | PASS, -15 (CI -22 to -8): 156 vs 171 |
+| P3 safety, at most 2 wrong verdicts made without the model | PASS, 0 wrong of 60 |
+| P4 capture of static false positives at least 95% | PASS, 1.000 (72 of 72) |
+| P5 replay equals live for M8 | PASS, 0 differences |
+| P6 scenario M at least 16 of 18 with the attribution check | PASS, 18 of 18 (M8 and M7: 13 of 18) |
+| P7 no harm: no scenario loses more than 1 case, no justified case rejected | PASS, none lost, 0 rejected |
+| P8 replay equals live for the attribution check | PASS, 0 differences |
+
+What the data supports:
+* The gated routing keeps M7's accuracy while making 15 fewer calls (8.8%), and its extra decisions made without the model were all correct. M8 was
+  marginally better than M7 (+0.004): in scenario K (ADR about a different module) the description-aware scope test skips a call on which the model had been wrong.
+* The attribution check fixes the mixed-decision weakness: scenario M 13 of 18 to 18 of 18, with no scenario made worse. Overall 213 of 216 correct; the
+  3 remaining errors are in scenario G (1 of 15, passing mention) and J (2 of 18, ADR cited only by the commit).
+* M7/M8 against M3 and M5: F1 0.97 against 0.89 and 0.91, with 60 and 15 fewer calls respectively. Intervals are unpaired here; the scenario table shows why:
+  M3 and M5 misread grandfathering after a cut-off (scenario D: 4 of 18) where the extract-then-compute split gets 18 of 18.
+* The deterministic reader alone (M6) is confidently wrong on this tier (F1 0.588), the motivation for gates instead of "escalate when unsure".
+
+Limits that remain: the benchmark is generated, the hard tier shares a generator family with the seeds the gates were developed on (21, 22), only one 7B model was
+used, the saving on adversarial text is modest, the gates were too conservative on the blind held-out paraphrase (see above), and none of this has been run on real
+ADR text beyond the 7-case study.
 
