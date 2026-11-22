@@ -95,7 +95,7 @@ step reports how to configure one.
 
 ```bash
 cd backend  && python -m pytest tests -q --cov=.          # 511 passed, 5 skipped
-cd frontend && npm test                                    # 93 passed;  npm run test:coverage for coverage
+cd frontend && npm test                                    # 99 passed;  npm run test:coverage for coverage
 ```
 The 5 skipped tests need a third-party repository cloned to `/tmp` (see the test file).
 `tests/test_frontend_contract.py` fails if the frontend's JSON fixtures drift from the real API.

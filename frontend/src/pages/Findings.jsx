@@ -4,12 +4,14 @@ import {
   getFinding,
   getFindingEvidence,
   getTriage,
+  requestRecommendation,
   requestSemanticAnalysis,
 } from "../api/client.js";
 import AdrList from "../components/AdrList.jsx";
 import CodeSnippet from "../components/CodeSnippet.jsx";
 import DecisionPanel from "../components/DecisionPanel.jsx";
 import EvolutionTimeline from "../components/EvolutionTimeline.jsx";
+import RecommendationPanel from "../components/RecommendationPanel.jsx";
 import { formatDate, plural } from "../lib/format.js";
 
 export default function Findings({ analysisId }) {
@@ -137,8 +139,13 @@ function FindingDetail({ analysisId, findingId, onBack }) {
   const [semantic, setSemantic] = useState(null);
   const [running, setRunning] = useState(false);
   const [runError, setRunError] = useState(null);
+  const [rec, setRec] = useState(null);
+  const [recLoading, setRecLoading] = useState(false);
+  const [recError, setRecError] = useState(null);
 
   useEffect(() => {
+    setRec(null);
+    setRecError(null);
     setFinding(null);
     setEvidence(null);
     setEvidenceError(null);
@@ -172,6 +179,18 @@ function FindingDetail({ analysisId, findingId, onBack }) {
       setRunError(err.message);
     } finally {
       setRunning(false);
+    }
+  }
+
+  async function suggestFix(refresh) {
+    setRecLoading(true);
+    setRecError(null);
+    try {
+      setRec(await requestRecommendation(findingId, analysisId, refresh));
+    } catch (err) {
+      setRecError(err.message);
+    } finally {
+      setRecLoading(false);
     }
   }
 
@@ -251,6 +270,10 @@ function FindingDetail({ analysisId, findingId, onBack }) {
               error={runError}
               onRun={run}
             />
+          </Section>
+
+          <Section title="Suggested fix" note="how to bring the code back in line (a suggestion, nothing is changed)">
+            <RecommendationPanel rec={rec} loading={recLoading} error={recError} onRun={suggestFix} />
           </Section>
         </>
       )}

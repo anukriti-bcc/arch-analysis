@@ -15,6 +15,7 @@ from analysis.policy.escalation import EvidenceGuidedPolicy
 from analysis.semantic.extract import LLMExtractAnalyzer, resolve_extraction
 from analysis.semantic.llm_analyzer import LLMSemanticAnalyzer
 from analysis.semantic.llm_client import LLMClient, client_from_env
+from analysis.semantic.remediation import RemediationAnalyzer
 from api.schemas.analyze import (
     AnalysisSummary,
     AnalyzeRequest,
@@ -307,3 +308,34 @@ def request_semantic_analysis(finding_id: str, analysis_id: str | None = None, f
     return {"finding_id": finding_id, "analysis_id": run.id, "decision": finding.decision,
             "semantic_analysis": finding.semantic_analysis, "evolution_evidence": finding.evolution_evidence,
             "evidence": bundle.to_dict()}
+
+
+_recommendations: dict[tuple, dict] = {}  # per-process cache so a demo does not call the model twice for the same finding
+
+
+@router.post("/findings/{finding_id}/recommendation")
+def request_recommendation(finding_id: str, analysis_id: str | None = None, use_llm: bool = True, refresh: bool = False) -> dict:
+    """"How would I fix this drift?" for one violation.
+
+    Always returns rule-derived options (the sanctioned route from the architecture rules, an ADR draft for documenting an
+    exception, and a rule review when the same rule is broken repeatedly). When a model is configured and `use_llm` is true,
+    it also tailors the steps to this code; its reply is validated and any file it names that is not in the repository is
+    flagged. If the finding has already been resolved as justified, no fix is suggested. Nothing is ever applied to the code.
+    A missing or failing model is not an error: the rule-derived advice is returned with a note."""
+    finding, run = _find(finding_id, analysis_id)
+    if finding.status.value != "violation":
+        raise HTTPException(status_code=409, detail="Only violations have a recommended fix.")
+    justified = bool(finding.decision) and finding.decision.get("final_verdict") == "justified"
+    key = (run.id, finding.id, bool(use_llm), justified)
+    if key in _recommendations and not refresh:
+        return {**_recommendations[key], "cached": True}
+    bundle, _ = _gather(finding, _aggregator(run))
+    same_rule = sum(1 for f in run.findings if f.status.value == "violation" and f.rule_id == finding.rule_id)
+    client = get_llm_client() if use_llm else None
+    result = RemediationAnalyzer(client).suggest(
+        bundle, run.architecture, known_files={c.path for c in run.components}, rule_violation_count=same_rule,
+        finding_id=finding.id, justified=justified)
+    result = {**result, "analysis_id": run.id, "cached": False}
+    if not result.get("error"):  # a failed model call must not be remembered
+        _recommendations[key] = result
+    return result

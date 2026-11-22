@@ -72,6 +72,11 @@ export function requestSemanticAnalysis(findingId, analysisId, force = false) {
   );
 }
 
+// "How would I fix this?" Rule-derived options always; AI-tailored steps when a model is connected. Nothing is applied.
+export function requestRecommendation(findingId, analysisId, refresh = false) {
+  return request(`/findings/${findingId}/recommendation${qs({ analysis_id: analysisId, refresh })}`, { method: "POST" });
+}
+
 // Per-violation: is the evidence sufficient, or does it need semantic review? No LLM.
 export function getTriage(analysisId) {
   return request(`/analysis/${analysisId}/triage`);

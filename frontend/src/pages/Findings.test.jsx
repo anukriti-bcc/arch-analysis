@@ -19,6 +19,11 @@ function routes(overrides = {}) {
     ["GET", new RegExp(`/analysis/${A}/findings/${FID}$`), overrides.finding ?? finding],
     ["GET", new RegExp(`/findings/${FID}/evidence`), overrides.evidence ?? evidence],
     ["POST", new RegExp(`/findings/${FID}/semantic-analysis`), overrides.semantic ?? semantic],
+    ["POST", new RegExp(`/findings/${FID}/recommendation`), overrides.recommendation ?? {
+      source: "rules", disclaimer: "Suggestion only. Review before applying; nothing here has been changed in your code.",
+      summary: "Rule R004 is broken.", recommended_option: "document_exception", warnings: [], note: null, ai: null, model: null,
+      options: [{ id: "document_exception", title: "Keep it and document it as a deliberate exception", effort: "low", why: "Record why.", steps: ["Write an ADR."] }],
+    }],
   ];
 }
 
@@ -89,6 +94,17 @@ describe("Finding detail", () => {
     expect(screen.getByTestId("final-pill")).toHaveTextContent("final: justified");
     expect(screen.getByTestId("semantic-explanation")).toHaveTextContent(semantic.semantic_analysis.explanation);
     expect(screen.getByTestId("verdict-banner")).toHaveTextContent("Justified by documented intent");
+  });
+
+  it("suggests a fix on request, scoped to its analysis run, and labels it as a suggestion", async () => {
+    const { calls } = await open();
+    expect(screen.getByText("Suggested fix", { exact: false, selector: "h4" })).toBeInTheDocument();
+    expect(calls.some((c) => c.url.includes("/recommendation"))).toBe(false); // nothing is requested until the user asks
+    await userEvent.click(screen.getByTestId("suggest-fix"));
+    await screen.findByTestId("recommendation-banner");
+    expect(calls.find((c) => c.url.includes("/recommendation")).url).toBe(`/api/findings/${FID}/recommendation?analysis_id=${A}`);
+    expect(screen.getByTestId("recommendation-banner")).toHaveTextContent("Review before applying");
+    expect(screen.getByTestId("option-document_exception")).toBeInTheDocument();
   });
 
   it("passes force=true for the forced review", async () => {
