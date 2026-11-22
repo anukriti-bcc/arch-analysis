@@ -136,8 +136,9 @@ Criteria were written in `ANALYSIS_PLAN.md` before the run. Output saved in `res
 | P8 replay equals live for the attribution check | PASS, 0 differences |
 
 What the data supports:
-* The gated routing keeps M7's accuracy while making 15 fewer calls (8.8%), and its extra decisions made without the model were all correct. M8 was
-  marginally better than M7 (+0.004): in scenario K (ADR about a different module) the description-aware scope test skips a call on which the model had been wrong.
+* The gated routing keeps M7's accuracy while making 15 fewer calls (8.8%), and its extra decisions made without the model were all correct. In run 1 M8 was
+  marginally better than M7 (+0.004, driven by scenario K, where the description-aware scope test skips a call the model got wrong); **in the replication the
+  difference was +0.000, so treat "M8 is at least as accurate as M7" as the supported claim and not "M8 is better".**
 * The attribution check fixes the mixed-decision weakness: scenario M 13 of 18 to 18 of 18, with no scenario made worse. Overall 213 of 216 correct; the
   3 remaining errors are in scenario G (1 of 15, passing mention) and J (2 of 18, ADR cited only by the commit).
 * M7/M8 against M3 and M5: F1 0.97 against 0.89 and 0.91, with 60 and 15 fewer calls respectively. Intervals are unpaired here; the scenario table shows why:
@@ -147,4 +148,20 @@ What the data supports:
 Limits that remain: the benchmark is generated, the hard tier shares a generator family with the seeds the gates were developed on (21, 22), only one 7B model was
 used, the saving on adversarial text is modest, the gates were too conservative on the blind held-out paraphrase (see above), and none of this has been run on real
 ADR text beyond the 7-case study.
+
+### Replication (run 2: same frozen code, seeds and model, a new Kaggle session; raw files in `results/m8_fresh_seeds/run2_replication/`)
+
+| Method | F1 run 1 | F1 run 2 | Calls |
+|---|---|---|---|
+| M3 full hybrid | 0.894 | 0.885 | 216 |
+| M5 | 0.914 | 0.906 | 171 |
+| M7 | 0.968 | 0.972 | 171 |
+| M8 gated | 0.972 | 0.972 | 156 |
+| M8 + attribution | 0.990 | 0.993 | 156 |
+
+P1 to P8 all passed again (P1 delta +0.000, CI +0.000 to +0.000; P2 -15 calls, CI -22 to -8; P3 0 wrong of 60; P4 72 of 72; P6 18 of 18; P7 none lost, none
+wrongly rejected; P5 and P8 0 differences). Between the two runs headline F1 moved by at most 0.009, and some scenario counts moved by 1 (for example scenario M for
+M7 and M8: 13 then 12 of 18; scenario J: 16 then 17; scenario D for M3 and M5: 4 then 3 of 18), while M8 with the attribution check stayed at 18 of 18 on scenario M.
+The model's answers are therefore not exactly repeatable across sessions (GPU and server nondeterminism); the conclusions do not depend on which run is read. Report
+run 1 as the pre-registered result and run 2 as the replication, and quote differences smaller than about 0.01 F1 as noise.
 

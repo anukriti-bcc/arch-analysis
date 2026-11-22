@@ -1,0 +1,31 @@
+all violations 480 justified 156 | old-policy candidates 375 justified among them 156
+
+-- hand-weighted score (fixed a priori)
+dev                                n=159 pos= 66  AUC=0.732  capture-AUC=0.639 (random 0.500, oracle 0.796)
+test hard s11-13                   n=216 pos= 90  AUC=0.725  capture-AUC=0.634 (random 0.502, oracle 0.794)
+test heldout                       n= 45 pos= 18  AUC=0.864  capture-AUC=0.732 (random 0.513, oracle 0.811)
+
+-- logistic regression trained on dev (s21,s22,primary), candidates only? trained on ALL violations
+test hard s11-13                   n=216 pos= 90  AUC=0.962  capture-AUC=0.772 (random 0.502, oracle 0.794)
+test heldout                       n= 45 pos= 18  AUC=1.000  capture-AUC=0.811 (random 0.513, oracle 0.811)
+
+-- leave-one-scenario-out (train on all other scenarios, all seeds), score the held-out scenario
+held-out scenario  cands  justified  LR AUC  hand AUC
+                B     42         42     NaN       NaN
+                C     42         42     NaN       NaN
+                J     42         42     NaN       NaN
+                L     30         30     NaN       NaN
+
+-- what separates justified from violation inside the candidate set? (means)
+   s_strong  s_desc  temp  migr  reintro  born     age  permit_cue  nfail  stance
+y                                                                                
+0      0.63     0.0  0.16   0.0      0.0   0.0  121.07        0.58   0.85    0.55
+1      0.90     0.1  0.00   0.0      0.0   0.0  108.02        0.81   1.04    0.62
+
+== POOLED leave-one-scenario-out (every candidate scored by a model that never saw its scenario)
+LR, all features               cands=375 justified=156 AUC=0.596  calls to capture 90%/95%/100%: 312/324/367
+GBM depth2, all features       cands=375 justified=156 AUC=0.317  calls to capture 90%/95%/100%: 360/368/375
+LR, metadata only (no text)    cands=375 justified=156 AUC=0.494  calls to capture 90%/95%/100%: 313/323/357
+LR, text-reading features only cands=375 justified=156 AUC=0.351  calls to capture 90%/95%/100%: 360/368/375
+hand-weighted                  cands=375 justified=156 AUC=0.728  calls to capture 90%/95%/100%: 280/323/330
+oracle                         calls to capture 100%: 156;  random expectation for 95%: ~356

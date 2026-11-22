@@ -1,0 +1,26 @@
+{
+  "created": "2026-11-22T10:49:02.959219+00:00",
+  "benchmark": "/kaggle/working/architecture-analyzer/datasets/benchmark/hard_s43",
+  "benchmark_seed": 43,
+  "benchmark_wording": "hard",
+  "prompt_version": "v1",
+  "prompt_variant": "full",
+  "m4_seeds": 5,
+  "splits": [
+    "dev",
+    "test"
+  ],
+  "methods": [
+    "static",
+    "deterministic_adr",
+    "full_hybrid",
+    "evidence_guided",
+    "extract_compute",
+    "gated",
+    "gated_attr"
+  ],
+  "provider": "openai-compatible",
+  "base_url": "http://localhost:11434/v1",
+  "model": "arch-judge",
+  "cache": "/kaggle/working/architecture-analyzer/results/llm_cache.sqlite"
+}

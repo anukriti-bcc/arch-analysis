@@ -1,0 +1,60 @@
+{
+ "compared": 59,
+ "unlabelled_in_sheet": [
+  "R006"
+ ],
+ "raw_agreement_3class": 0.8983050847457628,
+ "kappa_3class": 0.6062291434927698,
+ "raw_agreement_binary": 0.9152542372881356,
+ "kappa_binary": 0.661308840413318,
+ "disagreements": [
+  {
+   "id": "R003",
+   "sheet": "partly",
+   "other": "no"
+  },
+  {
+   "id": "R013",
+   "sheet": "partly",
+   "other": "no"
+  },
+  {
+   "id": "R034",
+   "sheet": "yes",
+   "other": "partly"
+  },
+  {
+   "id": "R040",
+   "sheet": "partly",
+   "other": "no"
+  },
+  {
+   "id": "R042",
+   "sheet": "partly",
+   "other": "no"
+  },
+  {
+   "id": "R043",
+   "sheet": "partly",
+   "other": "no"
+  }
+ ],
+ "prevalence_yes": {
+  "k": 3,
+  "n": 59,
+  "share": 0.05084745762711865,
+  "wilson95": [
+   0.017442401159453304,
+   0.1391672332228667
+  ]
+ },
+ "prevalence_yes_or_partly": {
+  "k": 11,
+  "n": 59,
+  "share": 0.1864406779661017,
+  "wilson95": [
+   0.10742612239043586,
+   0.30379192425382523
+  ]
+ }
+}

@@ -1,0 +1,52 @@
+/kaggle/working
+Pooled 216 cases from 3 runs -> /kaggle/working/architecture-analyzer/results/m8_confirm_all
+| method | split | precision | recall | f1 | f1_ci_low | f1_ci_high | false_positive_rate | llm_calls |
+|---|---|---|---|---|---|---|---|---|
+| M1_static | confirm | 0.667 | 1.000 | 0.800 | 0.751 | 0.845 | 0.053 | 0 |
+| M3_full_hybrid | confirm | 0.983 | 0.819 | 0.894 | 0.851 | 0.930 | 0.001 | 216 |
+| M5_evidence_guided | confirm | 0.984 | 0.854 | 0.914 | 0.877 | 0.946 | 0.001 | 171 |
+| M6_deterministic_adr | confirm | 0.676 | 0.521 | 0.588 | 0.510 | 0.655 | 0.026 | 0 |
+| M7_extract_compute | confirm | 0.986 | 0.951 | 0.968 | 0.946 | 0.987 | 0.001 | 171 |
+| M8_gated | confirm | 0.986 | 0.958 | 0.972 | 0.951 | 0.989 | 0.001 | 156 |
+| M8_gated_attr | confirm | 0.986 | 0.993 | 0.990 | 0.976 | 1.000 | 0.001 | 156 |
+PASS  P1 no regression (M8 - M7 paired F1, lower bound > -0.02)  delta +0.004 (95% CI +0.000 to +0.011); F1 M7 0.968, M8 0.972, M8+attr 0.990
+PASS  P2 saving (M8 - M7 paired calls, upper bound < 0)  delta -15.0 (95% CI -22.0 to -8.0); calls M7 171, M8 156
+PASS  P3 safety (at most 2 wrong verdicts made without the model)  0 wrong of 60 verdicts made without the model
+PASS  P4 capture (M8 escalates >= 95% of static false positives)  capture 1.000 (72 of 72)
+PASS  P5 replay = live for M8  0 predictions differ across 3 runs
+PASS  P6 attribution fix (scenario M correct >= 16 of 18)  M8+attr 18 of 18; M8 13; M7 13
+PASS  P7 no harm (no scenario loses > 1 case; no justified case rejected)  scenarios losing >1: none; justified cases rejected: 0
+PASS  P8 replay = live for the attribution check  0 predictions differ
+
+wrote ../results/m8_verdict/verdict.md
+# M8 / M8+attribution fresh-seed verdict (criteria fixed in docs/ANALYSIS_PLAN.md before the run)
+
+```
+PASS  P1 no regression (M8 - M7 paired F1, lower bound > -0.02)  delta +0.004 (95% CI +0.000 to +0.011); F1 M7 0.968, M8 0.972, M8+attr 0.990
+PASS  P2 saving (M8 - M7 paired calls, upper bound < 0)  delta -15.0 (95% CI -22.0 to -8.0); calls M7 171, M8 156
+PASS  P3 safety (at most 2 wrong verdicts made without the model)  0 wrong of 60 verdicts made without the model
+PASS  P4 capture (M8 escalates >= 95% of static false positives)  capture 1.000 (72 of 72)
+PASS  P5 replay = live for M8  0 predictions differ across 3 runs
+PASS  P6 attribution fix (scenario M correct >= 16 of 18)  M8+attr 18 of 18; M8 13; M7 13
+PASS  P7 no harm (no scenario loses > 1 case; no justified case rejected)  scenarios losing >1: none; justified cases rejected: 0
+PASS  P8 replay = live for the attribution check  0 predictions differ
+```
+
+## Correct per scenario (targeted+conformant violations)
+
+```
+method                             M1_static  M3_full_hybrid  M5_evidence_guided  M6_deterministic_adr  M7_extract_compute  M8_gated  M8_gated_attr
+scenario                                                                                                                                           
+A_plain_violation                         30              30                  30                    30                  30        30             30
+B_adr_permanent_exception                  0              18                  18                     0                  18        18             18
+C_adr_grandfathered_before_cutoff          0              18                  18                    18                  18        18             18
+D_adr_grandfathered_after_cutoff          18               4                   4                     0                  18        18             18
+E_adr_reaffirms_prohibition               18              18                  18                     0                  18        18             18
+F_adr_superseded                          15              10                  15                    15                  15        15             15
+G_adr_passing_mention                     15              15                  15                     0                  14        14             14
+H_temporary_became_permanent              15              15                  15                    15                  15        15             15
+J_adr_cited_by_commit_only                 0              18                  18                     0                  16        16             16
+K_adr_scope_mismatch                      15              14                  14                    15                  14        15             15
+L_adr_mixed_permits_target                 0              16                  16                    18                  18        18             18
+M_adr_mixed_prohibits_target              18              12                  12                     0                  13        13             18
+```
