@@ -7,12 +7,15 @@
    "age_days": 179,
    "direct_verdict": null,
    "escalate": true,
+   "failed_gates": [],
    "finding_id": "F006",
    "introduced_at": "2025-07-14T12:00:00+00:00",
    "key": "R004|app/services/quote_service.py|app/database/connection.py",
+   "policy": "v1",
    "reasons": [
     "I1: active decision record(s) relevant: ADR-030"
    ],
+   "route": "escalate",
    "rule_id": "R004",
    "source": {
     "component": "service",
@@ -27,7 +30,13 @@
   }
  ],
  "summary": {
+  "by_route": {
+   "direct_code": 0,
+   "direct_structural": 0,
+   "escalate": 1
+  },
   "needs_semantic_review": 1,
+  "policy": "v1",
   "resolved_directly": 0,
   "violations": 1
  }

@@ -6,6 +6,7 @@ import { mockApi } from "../test/mockApi.js";
 import runs from "../__fixtures__/experiment_runs.json";
 import run from "../__fixtures__/experiment_run.json";
 import preds from "../__fixtures__/experiment_predictions.json";
+import realChecks from "../__fixtures__/real_adr_checks.json";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -18,6 +19,21 @@ function routes(over = {}) {
 }
 
 describe("Evaluation page", () => {
+  it("shows the real-ADR checks apart from the method comparison, and still works if they are unavailable", async () => {
+    mockApi([...routes(), ["GET", /\/experiments\/real-adr-checks$/, realChecks]]);
+    const { unmount } = render(<Evaluation />);
+    await screen.findByTestId("metrics-table");
+    const panel = await screen.findByTestId("real-adr-checks");
+    expect(within(panel).getByText(/separate from the benchmark comparison/)).toBeInTheDocument();
+    expect(within(screen.getByTestId("metrics-table")).queryByText(/false-permission/i)).not.toBeInTheDocument();
+    unmount();
+    mockApi(routes());
+    render(<Evaluation />);
+    await screen.findByTestId("metrics-table");
+    expect(screen.queryByTestId("real-adr-checks")).not.toBeInTheDocument();
+  });
+
+
   it("explains how to produce results when there are none", async () => {
     mockApi([["GET", /runs$/, []]]);
     render(<Evaluation />);

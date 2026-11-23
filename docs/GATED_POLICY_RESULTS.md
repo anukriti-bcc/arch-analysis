@@ -1,6 +1,6 @@
 # Readability-gated escalation (policy v2, method M8): design and results
 
-Closes the largest gap in `docs/GAPS_STATUS.md` (#1, "the escalation policy is thin") and part of #6 (ADR matching). **Confirmed on fresh seeds 41-43 (section at the end): all pre-registered criteria P1-P8 passed.**
+Replaces the earlier, thin escalation rule (every finding with an active relevant ADR went to the model) and improves ADR matching. **Confirmed on fresh seeds 41-43 (section at the end): all pre-registered criteria P1-P8 passed.**
 Frozen at tag `m8-gated-frozen` (file hashes: `docs/frozen_m8_gated_sha256.json`). Model answers are those already recorded for
 M7 (Qwen2.5 7B Q4); M8 only changes WHICH findings are escalated (`experiments/replay_policy.py`, checked against a live run in
 `tests/test_gated_policy.py`). Replayed rows: `results/m8_replay/`.
@@ -43,7 +43,7 @@ On the confirmation seeds M8 also improves the policy-quality metrics: calls ove
 0.46, capture of static false positives 1.00 (nothing the model was needed for was skipped). M8 minus M5 is +0.079 F1
 (0.042 to 0.121) with 15 fewer calls; M8 minus M3 is +0.083 with 60 fewer calls.
 
-## What this does and does not show (state these in the report)
+## What this does and does not show 
 
 * **The saving depends on how regular the ADR text is, and on adversarial text it is small** (9% on the hard tier, which was
   written to defeat lexical reading). The safety property (no silent errors on any data) held everywhere; the saving is the
@@ -59,7 +59,7 @@ On the confirmation seeds M8 also improves the policy-quality metrics: calls ove
 * The gates were designed after reading the code reader's errors on the hard dev seeds (21, 22) and on primary seed 7, and three
   rounds of changes were made there (logged in `ANALYSIS_PLAN.md`). Only the confirmation seeds and the held-out wording are
   independent of that, and the latter is a single 60-case draw.
-* Still one model, a generated benchmark, and (gap #9) no run on real ADR text.
+* Still one model, a generated benchmark, and no large run on real ADR text (see `docs/FALSE_PERMISSION_RESULTS.md` and `docs/REAL_ADRS.md` for the checks that exist).
 
 ## Scored top-k escalation (hand-weighted or learned): tested, and why it is not the method
 

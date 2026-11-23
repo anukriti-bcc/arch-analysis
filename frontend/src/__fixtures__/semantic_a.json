@@ -1,16 +1,20 @@
 {
  "analysis_id": "A0002",
  "decision": {
+  "adr_id": null,
   "direct_verdict": "violation",
   "escalate": false,
+  "failed_gates": [],
   "final_verdict": "violation",
   "forced": false,
   "llm_called": false,
   "outcome_source": "direct",
+  "policy": "v1",
   "reasons": [
    "evidence sufficient: no relevant active intent and no ambiguity signal in history"
   ],
-  "resolution": "direct"
+  "resolution": "direct",
+  "route": "direct_structural"
  },
  "evidence": {
   "adrs": [],

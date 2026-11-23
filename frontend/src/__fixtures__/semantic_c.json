@@ -1,16 +1,20 @@
 {
  "analysis_id": "A0001",
  "decision": {
+  "adr_id": null,
   "direct_verdict": null,
   "escalate": true,
+  "failed_gates": [],
   "final_verdict": "justified",
   "forced": false,
   "llm_called": true,
   "outcome_source": "llm_extract",
+  "policy": "v1",
   "reasons": [
    "I1: active decision record(s) relevant: ADR-030"
   ],
-  "resolution": "extract_compute"
+  "resolution": "extract_compute",
+  "route": "escalate"
  },
  "evidence": {
   "adrs": [
@@ -148,6 +152,7 @@
   "extract_version": "x4",
   "extraction": {
    "adr_id": "ADR-030",
+   "attribution": "accepted: the decision is about this dependency alone",
    "covers_this_dependency": "yes",
    "decision": "permits",
    "explanation": "Keyword stand-in extraction.",
@@ -155,7 +160,7 @@
    "limit": "introduced_on_or_before",
    "limit_date": "2025-09-13"
   },
-  "latency_s": 0.0006203049999982113,
+  "latency_s": 0.00029346399998075867,
   "mode": "extract_compute",
   "model": "stub-model",
   "parsed_ok": true,

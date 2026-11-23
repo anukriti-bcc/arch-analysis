@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api.routes.analyze import router as analyze_router
 from api.routes.experiments import router as experiments_router
+from analysis.policy.product import PolicyConfigError, attribution_enabled, policy_name_from_env
 from storage import store
 
 app = FastAPI(
@@ -10,7 +11,7 @@ app = FastAPI(
     description=(
         "Repository -> Tree-sitter parsing -> dependencies -> architecture rules -> "
         "conformance findings, enriched with Git-history evidence and ADR intent, "
-        "with selective LLM review. See docs/PROGRESS.md for the roadmap."
+        "with selective LLM review. See README.md."
     ),
     version="0.2.0",
 )
@@ -37,5 +38,13 @@ def root() -> dict:
 
 @app.get("/health")
 def health() -> dict:
-    """Liveness plus the storage backend in use ("memory" or "postgresql") and whether it answers. Used by the Docker healthcheck."""
-    return {"status": "ok", "storage": store.describe()}
+    """Liveness plus the storage backend in use ("memory" or "postgresql") and whether it answers, and the escalation policy ("gated" = M8, or "v1")."""
+    try:
+        policy = policy_name_from_env()
+    except PolicyConfigError as exc:
+        policy = f"invalid: {exc}"
+    try:
+        attribution = "on" if attribution_enabled() else "off"
+    except PolicyConfigError as exc:
+        attribution = f"invalid: {exc}"
+    return {"status": "ok", "storage": store.describe(), "escalation_policy": policy, "attribution_check": attribution}

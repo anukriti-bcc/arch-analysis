@@ -93,3 +93,8 @@ export function getExperimentRun(name) {
 export function getExperimentPredictions(name, filters = {}) {
   return request(`/experiments/runs/${encodeURIComponent(name)}/predictions${qs(filters)}`);
 }
+
+// Summaries of the two checks of the model on real ADR text (saved outputs; nothing is run).
+export function getRealAdrChecks() {
+  return request("/experiments/real-adr-checks");
+}

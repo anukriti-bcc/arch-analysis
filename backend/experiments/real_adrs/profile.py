@@ -3,7 +3,7 @@
   Q1  How many real ADRs say anything about which parts of a system may depend on each other?
       (Architecture conformance checking against ADRs only applies to those.)
   Q2  Can the code-only reader (M6) read them? (stance cues, dates, exception language)
-  Q3  Does the ADR relevance matcher over-select on real text? (gap #6 of the assessment)
+  Q3  Does the ADR relevance matcher over-select on real text?
 
 Q1 is measured here with a keyword PROXY (`rule_tier`). A proxy is not a label: docs/REAL_ADRS.md reports its agreement with a
 hand-labelled sample, and `annotation_sheet.csv` lets the team label independently.

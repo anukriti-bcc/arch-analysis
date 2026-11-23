@@ -22,6 +22,12 @@ def filled(tmp_path, edits, done=True, name="Test Reviewer"):
     shutil.copy(REVIEW, p)
     wb = load_workbook(p)
     ws = wb["Review"]
+    # Start from a BLANK template: the real workbook now holds the team's verification, so clear every human-entered cell
+    # (YOUR_Q1/Q2/Q3, reviewed, note). The tests then do not depend on, or change, the real review data.
+    for row in ws.iter_rows(min_row=2):
+        if row[0].value:
+            for col in "HJLNO":
+                ws[f"{col}{row[0].row}"] = None
     for row in ws.iter_rows(min_row=2):
         rid = row[0].value
         if done:

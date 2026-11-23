@@ -1,0 +1,95 @@
+{
+ "analysis_id": "A0004",
+ "evidence": {
+  "adrs": [
+   {
+    "date": "2025-04-17",
+    "id": "ADR-006",
+    "match_reasons": [
+     "rule_id",
+     "file_names",
+     "component_types"
+    ],
+    "path": "architecture/adr/0006-allow-order_controller-to-use-order_repo.md",
+    "status": "accepted",
+    "status_raw": "Accepted",
+    "text": "# Allow order_controller to use order_repository directly\n\n* Status: Accepted\n* Date: 2025-04-17\n\n## Context and Problem Statement\n\nThe layering rule R005 normally forbids this dependency, but bulk exports would otherwise load the full result set into memory.\n\n## Decision Outcome\n\nWe accept that `order_controller` will use `order_repository` directly, bypassing rule R005. The exception is permanent and applies only to this module.\n\n### Consequences\n\nNo other module is covered by this exception.\n",
+    "title": "Allow order_controller to use order_repository directly"
+   }
+  ],
+  "evolution": {
+   "age_days": 138,
+   "authors_since_introduction": [
+    "dev-ops"
+   ],
+   "available": true,
+   "commits_examined": 4,
+   "commits_since_introduction": 8,
+   "first_introduced_at": "2025-05-17T12:00:00+00:00",
+   "history_truncated": false,
+   "introduced_at": "2025-05-17T12:00:00+00:00",
+   "introduced_with_file_creation": false,
+   "introducing_commit": {
+    "author": "bob",
+    "date": "2025-05-17T12:00:00+00:00",
+    "message": "Support order status filter",
+    "sha": "2e5c191ca7c07b03912a24959c375624f17f4c0c",
+    "short": "2e5c191c",
+    "subject": "Support order status filter"
+   },
+   "message_signals": {
+    "adr_references": [],
+    "issue_references": [],
+    "migration_language": [],
+    "temporary_language": []
+   },
+   "present_at_head": true,
+   "reintroduced": false,
+   "relevant_commits_since_introduction": 1,
+   "rename_history_detected": false,
+   "snapshot_commit": "1b4211b1",
+   "snapshot_date": "2025-10-02T12:00:00+00:00",
+   "source": "app/controllers/order_controller.py",
+   "target": "app/repositories/order_repository.py",
+   "timeline": [
+    {
+     "author": "bob",
+     "change": "introduced",
+     "date": "2025-05-17T12:00:00+00:00",
+     "sha": "2e5c191ca7c07b03912a24959c375624f17f4c0c",
+     "short": "2e5c191c",
+     "subject": "Support order status filter"
+    }
+   ]
+  },
+  "finding_key": "R005|app/controllers/order_controller.py|app/repositories/order_repository.py",
+  "rule": {
+   "description": "Controllers must not skip the Service layer to call Repositories directly.",
+   "id": "R005",
+   "name": "no-controller-repository",
+   "relation": "forbidden"
+  },
+  "snapshot_date": "2025-10-02T12:00:00+00:00",
+  "structural": {
+   "code_snippet": "   1: from app.repositories.order_repository import OrderRepository\n   2: from app.services.order_service import OrderService\n   3: \n   4: \n   5: class OrderController:",
+   "import": "app.repositories.order_repository.OrderRepository",
+   "line": 1,
+   "source": "app/controllers/order_controller.py",
+   "source_type": "controller",
+   "target": "app/repositories/order_repository.py",
+   "target_type": "repository"
+  }
+ },
+ "finding_id": "F001",
+ "policy": {
+  "adr_id": "ADR-006",
+  "direct_verdict": "justified",
+  "escalate": false,
+  "failed_gates": [],
+  "policy": "gated",
+  "reasons": [
+   "R1: ADR-006 read by code and passed every gate (permits; )"
+  ],
+  "route": "direct_code"
+ }
+}

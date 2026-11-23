@@ -95,7 +95,7 @@ def test_average_over_seeds_reports_mean_and_sd():
 
 
 def test_metrics_agree_with_scikit_learn_on_random_data():
-    """The synopsis names scikit-learn for evaluation. Our own implementation (which
+    """scikit-learn serves as the reference for the metrics. Our own implementation (which
     handles degenerate cases explicitly) must agree with it wherever sklearn is defined."""
     sk = pytest.importorskip("sklearn.metrics")
     rng = np.random.default_rng(42)

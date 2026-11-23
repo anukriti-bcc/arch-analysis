@@ -6,6 +6,11 @@ import evidenceA from "../__fixtures__/evidence_a.json";
 import evidenceC from "../__fixtures__/evidence_c.json";
 import semanticA from "../__fixtures__/semantic_a.json";
 import semanticC from "../__fixtures__/semantic_c.json";
+// Real API output under the default (M8 gated) policy: B resolved by code reading the ADR; C (held-out wording) sent to the model.
+import evidenceBGated from "../__fixtures__/evidence_b_gated.json";
+import semanticBGated from "../__fixtures__/semantic_b_gated.json";
+import evidenceCGated from "../__fixtures__/evidence_c_gated.json";
+import semanticCGated from "../__fixtures__/semantic_c_gated.json";
 
 const base = { running: false, error: null, onRun: () => {} };
 
@@ -102,6 +107,22 @@ describe("DecisionPanel — extract-then-compute (method M7)", () => {
     expect(screen.getByTestId("verdict-banner")).toHaveTextContent("Confirmed violation");
   });
 
+  it("shows why a permission was accepted or rejected by the stance-attribution check", () => {
+    const rejected = { ...extract, verdict: "violation", computed: "No usable permission for this module",
+                       extraction: { ...extract.extraction, decision: "does_not_address",
+                                     attribution: "rejected: the decision names other modules and no sentence about this module permits it, so the permission is theirs" } };
+    render(<DecisionPanel {...base} policy={evidenceC.policy} semantic={rejected} decision={decision} />);
+    expect(screen.getByTestId("attribution")).toHaveTextContent("rejected: the decision names other modules");
+  });
+
+  it("hides the attribution line when the check did not apply or was switched off", () => {
+    const { extraction } = extract;
+    const { rerender } = render(<DecisionPanel {...base} policy={evidenceC.policy} semantic={{ ...extract, extraction: { ...extraction, attribution: "not applicable" } }} decision={decision} />);
+    expect(screen.queryByTestId("attribution")).not.toBeInTheDocument();
+    rerender(<DecisionPanel {...base} policy={evidenceC.policy} semantic={extract} decision={decision} />);
+    expect(screen.queryByTestId("attribution")).not.toBeInTheDocument();
+  });
+
   it("shows no date limit plainly and hides the grounding line when there is no limit", () => {
     const sem = { ...extract, verdict: "justified", computed: "permits this module, no date limit",
                   extraction: { ...extract.extraction, limit: "none", limit_date: null, grounding: "no limit claimed" } };
@@ -126,3 +147,73 @@ describe("DecisionPanel — extract-then-compute (method M7)", () => {
   });
 });
 
+
+describe("DecisionPanel — how the M8 policy routed the finding", () => {
+  const byCode = evidenceBGated.policy;
+  const toModel = evidenceCGated.policy;
+
+  it("fixtures hold what the tests below assume", () => {
+    expect(byCode).toMatchObject({ policy: "gated", route: "direct_code", escalate: false, direct_verdict: "justified", failed_gates: [] });
+    expect(toModel).toMatchObject({ policy: "gated", route: "escalate", escalate: true });
+    expect(toModel.failed_gates.length).toBeGreaterThan(0);
+  });
+
+  it("says a finding was resolved structurally", () => {
+    render(<DecisionPanel {...base} policy={evidenceA.policy} />);
+    expect(screen.getByTestId("route-title")).toHaveTextContent("Resolved structurally");
+    expect(screen.getByTestId("verdict-banner")).toHaveTextContent("Evidence is sufficient — no LLM needed");
+    expect(screen.queryByTestId("failed-gates")).not.toBeInTheDocument();
+  });
+
+  it("says when code read the ADR, before running", () => {
+    render(<DecisionPanel {...base} policy={byCode} />);
+    expect(screen.getByTestId("route-title")).toHaveTextContent("Resolved by code reading the ADR");
+    expect(screen.getByTestId("verdict-banner")).toHaveTextContent("clear enough for code to read");
+    expect(screen.getByTestId("route-summary")).toHaveTextContent(byCode.adr_id);
+    expect(screen.getByTestId("policy-reasons")).toHaveTextContent("R1");
+  });
+
+  it("shows a code-read verdict with no model call and no model block, after running", () => {
+    render(<DecisionPanel {...base} policy={byCode} decision={semanticBGated.decision} semantic={semanticBGated.semantic_analysis} />);
+    expect(screen.getByTestId("verdict-banner")).toHaveTextContent("Justified by documented intent");
+    expect(screen.getByTestId("decision-how")).toHaveTextContent("code reading the ADR");
+    expect(screen.getByTestId("decision-how")).toHaveTextContent("No LLM call was made");
+    expect(screen.queryByTestId("semantic-result")).not.toBeInTheDocument();
+    expect(screen.getByTestId("route-title")).toHaveTextContent("Resolved by code reading the ADR");
+  });
+
+  it("names every failed readability check when a finding goes to the model", () => {
+    render(<DecisionPanel {...base} policy={toModel} />);
+    expect(screen.getByTestId("route-title")).toHaveTextContent("Sent to the model");
+    const gates = screen.getByTestId("failed-gates");
+    toModel.failed_gates.forEach((g) => expect(gates).toHaveTextContent(g));
+    expect(gates).toHaveTextContent("Date or time wording the reader cannot fully explain");
+  });
+
+  it("keeps the route and failed checks on screen after the model has run", () => {
+    render(<DecisionPanel {...base} policy={toModel} decision={semanticCGated.decision} semantic={semanticCGated.semantic_analysis} />);
+    expect(screen.getByTestId("route-title")).toHaveTextContent("Sent to the model");
+    expect(screen.getByTestId("failed-gates")).toHaveTextContent(toModel.failed_gates[0]);
+    expect(screen.getByTestId("decision-how")).toHaveTextContent("Resolved by extraction and computation");
+  });
+
+  it("names the policy that made the decision", () => {
+    const { unmount } = render(<DecisionPanel {...base} policy={toModel} />);
+    expect(screen.getByTestId("policy-name")).toHaveTextContent("M8 readability-gated policy");
+    unmount();
+    render(<DecisionPanel {...base} policy={evidenceC.policy} />);
+    expect(screen.getByTestId("policy-name")).toHaveTextContent("v1 policy");
+  });
+
+  it("shows an unknown gate by its code rather than hiding it", () => {
+    render(<DecisionPanel {...base} policy={{ ...toModel, failed_gates: ["G_future"] }} />);
+    expect(screen.getByTestId("failed-gates")).toHaveTextContent("G_future");
+  });
+
+  it("shows no route block for a response from an older backend", () => {
+    const { route, policy, failed_gates, adr_id, ...legacy } = evidenceC.policy;
+    render(<DecisionPanel {...base} policy={legacy} />);
+    expect(screen.queryByTestId("route-summary")).not.toBeInTheDocument();
+    expect(screen.getByTestId("verdict-banner")).toHaveTextContent("semantic review recommended");
+  });
+});

@@ -11,7 +11,8 @@ from analysis.evidence.aggregator import EvidenceAggregator
 from analysis.evolution.git_evolution import GitEvolutionAnalyzer
 from analysis.intent.adr import load_adrs
 from analysis.intent.reader import introduction_date
-from analysis.policy.escalation import EvidenceGuidedPolicy
+from analysis.policy.product import PolicyConfigError, attribution_enabled, policy_from_env
+from analysis.semantic.attribution import check_attribution
 from analysis.semantic.extract import LLMExtractAnalyzer, resolve_extraction
 from analysis.semantic.llm_analyzer import LLMSemanticAnalyzer
 from analysis.semantic.llm_client import LLMClient, client_from_env
@@ -32,7 +33,6 @@ from storage.memory_store import AnalysisRun, now_iso
 router = APIRouter()
 
 _evolution_analyzer = GitEvolutionAnalyzer()
-_policy = EvidenceGuidedPolicy()
 
 
 def get_llm_client() -> LLMClient | None:
@@ -46,6 +46,10 @@ def _extract_and_compute(client: LLMClient, bundle) -> tuple[dict, str, str]:
     """Method M7 in the product: the model EXTRACTS facts from the ADR (it is never shown any date to compare), and code
     COMPUTES the verdict by comparing the extracted date limit with the Git introduction date.
     Returns (semantic result for the UI, final verdict, outcome source)."""
+    try:
+        attribution_enabled()  # a bad ATTRIBUTION_CHECK is a clear server error, as for ESCALATION_POLICY
+    except PolicyConfigError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
     result = LLMExtractAnalyzer(client).extract(bundle)
     base = {"mode": "extract_compute", "extract_version": result["extract_version"], "parsed_ok": result["parsed_ok"],
             "error": result["error"], "model": result["model"], "tokens_used": result["tokens_used"],
@@ -54,6 +58,8 @@ def _extract_and_compute(client: LLMClient, bundle) -> tuple[dict, str, str]:
     x = result["parsed"]
     if x is None:  # unparseable reply: keep the structural verdict and say so
         return {**base, "verdict": None, "explanation": "", "extraction": None, "computed": None}, "violation", "fallback"
+    if attribution_enabled():  # stance-attribution check (M8_gated_attr): a permission written for another module is not this module's
+        x = check_attribution(x, bundle.adrs, bundle.source_path, bundle.target_path)
     res = resolve_extraction(x, introduction_date(bundle.evolution))
     extraction = {**x, "limit_date": x["limit_date"].isoformat() if x["limit_date"] else None}
     semantic = {**base, "verdict": None if res.outcome == "unresolved" else res.outcome, "explanation": x["explanation"],
@@ -198,13 +204,22 @@ def _aggregator(run) -> EvidenceAggregator:
     return EvidenceAggregator(run.repository_path, run.architecture, load_adrs(run.repository_path), _evolution_analyzer)
 
 
+def _decide(bundle):
+    """The configured escalation policy (ESCALATION_POLICY: gated = M8, the default; v1 = M7's). A bad setting is a
+    clear server error, not a silent fallback, so a demo never runs a different policy than the one that was asked for."""
+    try:
+        return policy_from_env().decide(bundle)
+    except PolicyConfigError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
 def _gather(finding, aggregator):
     """Evidence bundle + policy decision for one finding. No LLM involved."""
     bundle = aggregator.build(finding)
     finding.evolution_evidence = bundle.evolution
     finding.architectural_intent = {"rule": bundle.to_dict()["rule"], "adrs": [m.to_dict() for m in bundle.adrs]}
     store.update_finding(finding)  # a database store must persist evidence attached after the run was saved
-    return bundle, _policy.decide(bundle)
+    return bundle, _decide(bundle)
 
 
 @router.get("/findings/{finding_id}/evolution")
@@ -249,12 +264,15 @@ def get_analysis_triage(analysis_id: str) -> dict:
             "finding_id": finding.id, "key": finding.key,
             "source": finding.source, "target": finding.target, "rule_id": finding.rule_id,
             "escalate": decision.escalate, "direct_verdict": decision.direct_verdict, "reasons": decision.reasons,
+            "policy": decision.policy, "route": decision.route, "failed_gates": decision.failed_gates,
             "introduced_at": ev.get("introduced_at"), "age_days": ev.get("age_days"),
             "adr_count": len(bundle.adrs), "active_adr_count": sum(1 for m in bundle.adrs if m.adr.is_active),
         })
     needs = sum(1 for i in items if i["escalate"])
+    by_route = {r: sum(1 for i in items if i["route"] == r) for r in ("direct_structural", "direct_code", "escalate")}
     return {"analysis_id": run.id,
-            "summary": {"violations": len(items), "resolved_directly": len(items) - needs, "needs_semantic_review": needs},
+            "summary": {"violations": len(items), "resolved_directly": len(items) - needs, "needs_semantic_review": needs,
+                        "by_route": by_route, "policy": items[0]["policy"] if items else None},
             "items": items}
 
 

@@ -62,6 +62,9 @@ export default function Findings({ analysisId }) {
         <div className="stat-grid" data-testid="triage-summary">
           <StatCard label="violations" value={triage.summary.violations} tone={triage.summary.violations > 0 ? "brick" : "forest"} />
           <StatCard label="resolved from evidence, no LLM" value={triage.summary.resolved_directly} tone="forest" />
+          {triage.summary.by_route && triage.summary.by_route.direct_code > 0 && (
+            <StatCard label="of which read by code from an ADR" value={triage.summary.by_route.direct_code} tone="forest" />
+          )}
           <StatCard label="need semantic review" value={triage.summary.needs_semantic_review} tone="accent" />
         </div>
       )}
@@ -105,7 +108,7 @@ export default function Findings({ analysisId }) {
                       className={`status-pill ${t.escalate ? "review" : "sufficient"}`}
                       title={(t.reasons || []).join("\n")}
                     >
-                      {t.escalate ? "needs review" : "sufficient"}
+                      {t.escalate ? "needs review" : t.route === "direct_code" ? "read by code" : "sufficient"}
                     </span>
                   ) : (
                     <span className="muted">—</span>

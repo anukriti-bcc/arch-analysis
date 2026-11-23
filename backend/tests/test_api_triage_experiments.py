@@ -8,6 +8,9 @@ from fastapi.testclient import TestClient
 from api.routes import experiments as exp
 from main import app
 
+# These tests describe the v1 policy (M7); the default gated policy (M8) is covered in test_product_policy.py.
+pytestmark = pytest.mark.usefixtures("policy_v1")
+
 
 @pytest.fixture
 def client():
@@ -63,7 +66,9 @@ def test_semantic_response_includes_evidence_for_the_ui(client, bench_root, monk
 def test_triage_counts_match_per_item_decisions(client, bench_root):
     aid, _ = analyze(client, bench_root, "F")  # superseded-only ADR -> resolved without LLM
     t = client.get(f"/analysis/{aid}/triage").json()
-    assert t["summary"] == {"violations": 1, "resolved_directly": 1, "needs_semantic_review": 0}
+    counts = {k: t["summary"][k] for k in ("violations", "resolved_directly", "needs_semantic_review")}
+    assert counts == {"violations": 1, "resolved_directly": 1, "needs_semantic_review": 0}
+    assert t["summary"]["by_route"] == {"direct_structural": 1, "direct_code": 0, "escalate": 0} and t["summary"]["policy"] == "v1"
     item = t["items"][0]
     assert item["escalate"] is False and item["direct_verdict"] == "violation" and item["reasons"][0].startswith("I2")
     assert item["adr_count"] == 1 and item["active_adr_count"] == 0
@@ -147,3 +152,59 @@ def test_run_payload_includes_paired_and_density_when_present_and_empty_lists_ot
     body = client.get("/experiments/runs/run1").json()
     assert body["paired"][0]["metric"] == "f1" and body["paired"][0]["ci_low"] == -0.05
     assert body["density"][1]["calls_saved_vs_m3"] is None  # blank cell -> null, not NaN
+
+
+# ---------------------------------------------------------------- real-ADR checks (saved outputs, nothing run)
+
+def _probe_summary(k=0, routed_structural=44):
+    c = {"k": k, "n": 44, "rate": k / 44, "ci_low": 0.0, "ci_high": 0.0803}
+    return {"n_primary": 44, "n_inactive_control": 5, "n_excluded_empty": 1, "band": "LOW", "thresholds": {"LOW": "0-2"},
+            "model_raw": {"dangerous": c, "misleading": c, "failure": 0}, "model_with_attribution": {"dangerous": c},
+            "routing": {"selected_by_matcher": {"k": 1, "n": 44, "ci_low": 0.004, "ci_high": 0.118},
+                        "direct_structural": routed_structural, "direct_code": 0, "escalate": 44 - routed_structural},
+            "pipeline": {"false_justified": c}}
+
+
+def _write_checks(root, summary=None, case_rows=None):
+    if summary is not None:
+        d = root / "real_adrs_false_permission"
+        d.mkdir(parents=True)
+        (d / "summary.json").write_text(json.dumps(summary))
+    if case_rows is not None:
+        d = root / "real_adrs_case_study"
+        d.mkdir(parents=True)
+        import pandas as pd
+        pd.DataFrame(case_rows).to_csv(d / "results.csv", index=False)
+
+
+def test_real_adr_checks_summarises_both_outputs(client, tmp_path, monkeypatch):
+    monkeypatch.setenv("RESULTS_DIR", str(tmp_path))
+    rows = [{"case_id": "C01", "expected": "violation", "m6_pipeline": "violation", "m7": "justified"},
+            {"case_id": "C02", "expected": "violation", "m6_pipeline": "violation", "m7": "violation"},
+            {"case_id": "C03", "expected": "justified", "m6_pipeline": "violation", "m7": "justified"}]
+    _write_checks(tmp_path, _probe_summary(), rows)
+    body = client.get("/experiments/real-adr-checks").json()
+    fp, cs = body["false_permission"], body["case_study"]
+    assert fp["band"] == "LOW" and fp["dangerous"]["k"] == 0 and fp["dangerous"]["n"] == 44
+    assert fp["routes"] == {"structural": 44, "code_reader": 0, "model": 0}
+    assert cs["n"] == 3 and cs["n_violations"] == 2 and cs["m7_correct"] == 2 and cs["m6_pipeline_correct"] == 2
+    assert cs["hidden_violations"] == 1  # C01: a violation called justified
+    assert [c["m7_correct"] for c in cs["cases"]] == [False, True, True]
+
+
+def test_real_adr_checks_missing_or_broken_files_give_null_not_errors(client, tmp_path, monkeypatch):
+    monkeypatch.setenv("RESULTS_DIR", str(tmp_path))
+    assert client.get("/experiments/real-adr-checks").json() == {"false_permission": None, "case_study": None}
+    d = tmp_path / "real_adrs_false_permission"
+    d.mkdir()
+    (d / "summary.json").write_text("{not json")
+    c = tmp_path / "real_adrs_case_study"
+    c.mkdir()
+    (c / "results.csv").write_text("case_id\n")  # no rows and no needed columns
+    r = client.get("/experiments/real-adr-checks")
+    assert r.status_code == 200 and r.json() == {"false_permission": None, "case_study": None}
+
+
+def test_real_adr_checks_does_not_collide_with_run_names(client, tmp_path, monkeypatch):
+    monkeypatch.setenv("RESULTS_DIR", str(tmp_path))
+    assert client.get("/experiments/runs/real-adr-checks").status_code == 404

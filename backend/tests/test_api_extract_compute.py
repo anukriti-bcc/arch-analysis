@@ -8,6 +8,9 @@ from analysis.semantic.llm_client import FunctionClient
 from api.routes import analyze as routes
 from tests.test_api_evidence import analyze, client, stub_llm  # noqa: F401  (fixtures)
 
+# These tests describe the v1 policy (M7); the default gated policy (M8) is covered in test_product_policy.py.
+pytestmark = pytest.mark.usefixtures("policy_v1")
+
 
 def post(client, aid, fid, **params):
     r = client.post(f"/findings/{fid}/semantic-analysis", params={"analysis_id": aid, **params})

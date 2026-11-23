@@ -8,6 +8,7 @@ import finding from "../__fixtures__/finding_c.json";
 import evidence from "../__fixtures__/evidence_c.json";
 import semantic from "../__fixtures__/semantic_c.json";
 import triage from "../__fixtures__/triage_c.json";
+import triageBGated from "../__fixtures__/triage_b_gated.json";
 
 const A = analysis.analysis_id;
 const FID = finding.id;
@@ -38,6 +39,18 @@ describe("Findings list", () => {
     const row = screen.getByTestId(`row-${FID}`);
     expect(within(row).getByText("needs review")).toBeInTheDocument();
     expect(within(row).getByText("violation")).toBeInTheDocument();
+  });
+
+  it("shows how many findings code resolved by reading an ADR, and labels those rows", async () => {
+    // real API output for scenario B under the default (M8 gated) policy: resolved by code reading the ADR
+    mockApi([
+      ["GET", new RegExp(`/analysis/${A}/findings$`), [{ ...analysis.findings.find((f) => f.id === FID), id: FID }]],
+      ["GET", new RegExp(`/analysis/${A}/triage$`), { ...triageBGated, items: triageBGated.items.map((i) => ({ ...i, finding_id: FID })) }],
+    ]);
+    render(<Findings analysisId={A} />);
+    const summary = await screen.findByTestId("triage-summary");
+    expect(within(summary).getByText("of which read by code from an ADR").previousSibling).toHaveTextContent("1");
+    expect(within(screen.getByTestId(`row-${FID}`)).getByText("read by code")).toBeInTheDocument();
   });
 
   it("lists conformant rows without a triage pill", async () => {

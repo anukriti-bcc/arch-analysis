@@ -1,6 +1,6 @@
 """Finding identity: stable keys, contiguous per-run ids, run-scoped lookup.
 
-These guard the bugs found when reviewing the mid-viva code:
+These guard bugs found in an earlier code review:
   * ids were derived from dependency list position, so they skipped numbers
     and changed whenever code changed;
   * the store kept one global dict keyed by id, so a second analysis run

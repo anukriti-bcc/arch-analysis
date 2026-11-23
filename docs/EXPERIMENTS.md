@@ -60,7 +60,7 @@ free. Unit tests never call a model; only these experiment runs do.
     export LLM_MODEL=arch-judge
     export LLM_API_KEY=ollama
 
-In the report, record the BASE model name and digest (`ollama show <model>`), not
+When reporting results, record the BASE model name and digest (`ollama show <model>`), not
 just "arch-judge". Keep the same model for every method.
 
 Suggested phases (every real response is cached; changing a prompt or bumping
@@ -132,7 +132,7 @@ M1 static | M2 LLM-only (every edge, no structural pre-check) | M3 full hybrid (
 every structural violation) | M4 generic selective (random subset, same budget as M5)
 | M5 evidence-guided | A1 = M5 without evolution evidence.
 
-## Threats to validity (state these in the report)
+## Threats to validity
 1. The benchmark is generated and its scenario mix and ADR wording are authored
    by us. Results show behaviour under controlled conditions, not accuracy on
    real repositories. Several wording variants, noise ADRs, a dev/test split and

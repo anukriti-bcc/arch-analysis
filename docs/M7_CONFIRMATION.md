@@ -60,7 +60,7 @@ tried; x3 was rejected under a pre-stated rule and is archived (`experiments/arc
 under a pre-stated rule (all six lines passed) and then frozen before this run. The chronology and every decision are in the
 deviations log of `docs/ANALYSIS_PLAN.md`.
 
-## Limits (state these in the report)
+## Limits
 
 * **Scenario M is a real weakness.** When an ADR permits one module and forbids another, M7 sometimes reads the permission as
   applying to the flagged (forbidden) module: 7 of 18 wrong, in the dangerous direction (a real violation called justified).

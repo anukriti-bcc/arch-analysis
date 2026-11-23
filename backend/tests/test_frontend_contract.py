@@ -28,6 +28,8 @@ def key_shape(obj):
 
 
 def test_committed_fixtures_match_live_api_shapes(tmp_path):
+    if not os.path.isdir(FIXTURES):
+        pytest.skip("frontend/ is not present (e.g. the Kaggle bundle); this check runs in the full repository")
     export(str(tmp_path))
     names = sorted(f for f in os.listdir(tmp_path) if f.endswith(".json"))
     assert names, "export produced nothing"

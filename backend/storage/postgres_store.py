@@ -1,4 +1,4 @@
-"""PostgreSQL storage for analysis runs (the synopsis lists PostgreSQL as the project's database).
+"""PostgreSQL storage for analysis runs (optional; the default store is in-memory).
 
 Same interface as `memory_store._MemoryStore`, selected by the DATABASE_URL environment variable (see storage/__init__.py).
 

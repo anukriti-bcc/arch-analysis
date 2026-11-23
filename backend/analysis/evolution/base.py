@@ -5,8 +5,7 @@ Per currentplan.docx: "don't hard-code Git analysis yet ... we're
 building the final architecture incrementally." This interface exists so
 the conformance engine and Finding schema already have a place for
 evolution evidence to attach to (Finding.evolution_evidence), without
-committing to a Git mining design before it's been thought through
-(Milestone 2 in PROGRESS.md).
+committing to a Git mining design before it's been thought through.
 
 When implemented, a concrete subclass (e.g. GitEvolutionAnalyzer) will
 mine introducing commits, diffs, persistence, and migration patterns for

@@ -84,3 +84,11 @@ def bench_cases_heldout(bench_root_heldout):
         entry = {"case_id": f"{letter}01", "scenario": meta["scenario"], "split": "test", "path": f"{letter}01"}
         out[letter] = CaseContext(bench_root_heldout, entry)
     return out
+
+
+@_pytest.fixture
+def policy_v1(monkeypatch):
+    """Pin the escalation policy to v1 (methods M5/M7). The product default is now the gated policy (M8), which lets code
+    resolve clear ADRs without a model; tests of the model-resolution mechanism need a finding that reaches the model,
+    which with the primary ADR wording only v1 guarantees. The gated behaviour has its own tests (test_product_policy.py)."""
+    monkeypatch.setenv("ESCALATION_POLICY", "v1")

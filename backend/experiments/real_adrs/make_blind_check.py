@@ -1,7 +1,7 @@
 """Build a small BLIND human check of the AI-drafted real-ADR labels.
 
-Why: two review sheets came back with identical changes (the second was the first plus one row), so independent human verification is not established.
-A blind check fixes that cheaply: 20 excerpts, shown in shuffled order with NO AI labels, labelled from scratch by a person.
+Why: the team's 60-row verification was done with the AI draft visible on the sheet. This optional blind check complements it cheaply:
+20 excerpts, shown in shuffled order with NO AI labels, labelled from scratch by a person.
 
   python -m experiments.real_adrs.make_blind_check --pass2 ../results/real_adrs/annotation_sheet_claude_pass2.csv --out ../results/real_adrs
 

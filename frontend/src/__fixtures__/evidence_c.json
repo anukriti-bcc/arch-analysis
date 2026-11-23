@@ -82,10 +82,14 @@
  },
  "finding_id": "F006",
  "policy": {
+  "adr_id": null,
   "direct_verdict": null,
   "escalate": true,
+  "failed_gates": [],
+  "policy": "v1",
   "reasons": [
    "I1: active decision record(s) relevant: ADR-030"
-  ]
+  ],
+  "route": "escalate"
  }
 }

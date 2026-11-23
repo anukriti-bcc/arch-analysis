@@ -1,5 +1,5 @@
 import React from "react";
-import { formatInt } from "../lib/format.js";
+import { ROUTE_LABELS, formatInt, gateLabel, policyLabel } from "../lib/format.js";
 
 // The "Evidence sufficient?" decision of the workflow, made visible:
 //   * before running: what the policy WOULD do with the evidence (no LLM involved)
@@ -17,12 +17,15 @@ export default function DecisionPanel({ policy, decision, semantic, running, err
     headline = "Evidence is not sufficient on its own — semantic review recommended";
   } else {
     tone = "sufficient";
-    headline = "Evidence is sufficient — no LLM needed";
+    headline = shown.route === "direct_code" ? "Evidence is sufficient — the ADR is clear enough for code to read, no LLM needed" : "Evidence is sufficient — no LLM needed";
   }
 
   let how = null;
   if (decision) {
-    if (!decision.llm_called) how = "Resolved from the evidence alone. No LLM call was made.";
+    if (!decision.llm_called)
+      how = decision.route === "direct_code"
+        ? "Resolved by code reading the ADR: every readability check passed. No LLM call was made."
+        : "Resolved from the evidence alone. No LLM call was made.";
     else if (decision.outcome_source === "fallback")
       how = "The LLM was called but gave no usable verdict, so the structural verdict was kept.";
     else if (decision.resolution === "extract_compute")
@@ -36,6 +39,8 @@ export default function DecisionPanel({ policy, decision, semantic, running, err
         <div className="verdict-headline">{headline}</div>
         {how && <div className="verdict-sub" data-testid="decision-how">{how}</div>}
       </div>
+
+      <RouteSummary decision={shown} />
 
       <div className="why">
         <div className="why-label">{decision ? "Why" : "Policy reasoning"}</div>
@@ -71,6 +76,32 @@ export default function DecisionPanel({ policy, decision, semantic, running, err
   );
 }
 
+// WHICH way the policy resolved (or would resolve) the finding, and, when it goes to the model, which readability checks failed.
+// Older API responses carry no route; then nothing is shown and the panel behaves as before.
+function RouteSummary({ decision }) {
+  const info = ROUTE_LABELS[decision.route];
+  if (!info) return null;
+  const gates = decision.failed_gates || [];
+  const policy = policyLabel(decision.policy);
+  return (
+    <div className={`route-summary ${decision.route}`} data-testid="route-summary">
+      <div className="route-title" data-testid="route-title">{info.title}</div>
+      <div className="route-detail">{info.detail}</div>
+      {gates.length > 0 && (
+        <ul className="gate-list" data-testid="failed-gates">
+          {gates.map((g) => (
+            <li key={g}>
+              <span className="chip">{g}</span> {gateLabel(g)}
+            </li>
+          ))}
+        </ul>
+      )}
+      {decision.adr_id && <div className="route-meta">ADR read: <span className="mono">{decision.adr_id}</span></div>}
+      {policy && <div className="route-meta" data-testid="policy-name">Policy: {policy}</div>}
+    </div>
+  );
+}
+
 // Extract-then-compute (method M7): show what the model READ, what it was checked against, and what CODE computed.
 function ExtractedFacts({ semantic }) {
   const x = semantic.extraction;
@@ -86,6 +117,12 @@ function ExtractedFacts({ semantic }) {
         </dd>
         <dt>Date limit</dt>
         <dd>{limit}</dd>
+        {x.attribution && x.attribution !== "not applicable" && (
+          <>
+            <dt>Whose permission</dt>
+            <dd data-testid="attribution">{x.attribution}</dd>
+          </>
+        )}
         {x.limit !== "none" && x.grounding && (
           <>
             <dt>Checked against the text</dt>

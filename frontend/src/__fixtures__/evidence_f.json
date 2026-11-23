@@ -82,10 +82,14 @@
  },
  "finding_id": "F001",
  "policy": {
+  "adr_id": null,
   "direct_verdict": "violation",
   "escalate": false,
+  "failed_gates": [],
+  "policy": "v1",
   "reasons": [
    "I2: relevant records are all inactive (ADR-020=superseded)"
-  ]
+  ],
+  "route": "direct_structural"
  }
 }

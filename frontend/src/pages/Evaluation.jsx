@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { getExperimentPredictions, getExperimentRun, listExperimentRuns } from "../api/client.js";
 import { formatDate, formatFixed, formatInt, methodLabel, methodShort } from "../lib/format.js";
+import RealAdrChecks from "../components/RealAdrChecks.jsx";
 
 // Shows the outputs of `python -m experiments.run_experiments` so results can be
 // inspected (and manually checked) without opening CSV files.
@@ -47,6 +48,7 @@ export default function Evaluation() {
           <br />
           (see docs/EXPERIMENTS.md). Results are read from the <span className="mono">results/</span> folder.
         </p>
+        <RealAdrChecks />
       </div>
     );
   }
@@ -104,6 +106,7 @@ export default function Evaluation() {
           <Inspector runName={selected} methods={[...new Set(run.by_scenario.map((r) => r.method))]} scenarios={[...new Set(run.by_scenario.map((r) => r.scenario))]} />
         </>
       )}
+      <RealAdrChecks />
     </div>
   );
 }

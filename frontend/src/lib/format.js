@@ -32,6 +32,45 @@ export function isActiveAdrStatus(status) {
   return !INACTIVE_ADR_STATUSES.includes(String(status || "").toLowerCase());
 }
 
+// Escalation policy routes (backend/analysis/policy/gated.py) and the readability gates that can send a finding to the model.
+export const ROUTE_LABELS = {
+  direct_structural: {
+    title: "Resolved structurally",
+    detail: "No active decision record is about this dependency and the history shows nothing ambiguous, so the structural verdict stands.",
+  },
+  direct_code: {
+    title: "Resolved by code reading the ADR",
+    detail: "An active ADR is about this dependency and every readability check passed, so code applied the ADR's stance. No model was needed.",
+  },
+  escalate: {
+    title: "Sent to the model",
+    detail: "The evidence is not enough to decide without a model, or the code reading of the ADR cannot be trusted.",
+  },
+};
+
+export const GATE_LABELS = {
+  G_clear: "The code reader reached no clear verdict",
+  G_section: "The ADR has no recognisable Decision section",
+  G_polarity: "Both prohibiting and permitting wording",
+  G_negation: "A negation inside a decision read as permitting",
+  G_anchor: "No stance sentence names both modules",
+  G_temporal: "Date or time wording the reader cannot fully explain",
+  G_conditions: "Conditional or hedged wording",
+  G_subject: "The decision also covers other modules",
+  G_single: "Another active ADR also governs this dependency",
+  G_scope: "No strongly scoped ADR to read",
+};
+
+export function gateLabel(gate) {
+  return GATE_LABELS[gate] || gate;
+}
+
+export function policyLabel(policy) {
+  if (policy === "gated") return "M8 readability-gated policy";
+  if (policy === "v1") return "v1 policy (M7: every finding with an active ADR escalates)";
+  return null;
+}
+
 export const MATCH_REASON_LABELS = {
   rule_id: "names the triggered rule",
   file_names: "names both files",

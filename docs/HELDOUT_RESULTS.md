@@ -44,7 +44,7 @@ M7: 45 of 45 calls parsed, 0 fallbacks; grounding accepted all 12 extracted limi
 | H5 intent helps (M5 vs A2) | not run | not supported (+0.080, CI -0.066 to 0.240) | n/a |
 | F1(M5, held-out) >= F1(M5, primary) - 0.10 | | 0.889 vs 0.973 = -0.084 | met, narrowly |
 
-## What this means (state it in the report)
+## What this means
 
 1. **The LLM's value is conditional on how irregular the ADR text is.** On templated wording (primary) and on a mild paraphrase
    (held-out) a code-only reader written from general ADR conventions matches M7 at no cost. Only on the hard tier, written

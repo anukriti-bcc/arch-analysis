@@ -68,10 +68,14 @@
  },
  "finding_id": "F001",
  "policy": {
+  "adr_id": null,
   "direct_verdict": "violation",
   "escalate": false,
+  "failed_gates": [],
+  "policy": "v1",
   "reasons": [
    "evidence sufficient: no relevant active intent and no ambiguity signal in history"
-  ]
+  ],
+  "route": "direct_structural"
  }
 }

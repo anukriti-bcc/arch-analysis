@@ -7,6 +7,9 @@ from api.routes import analyze as routes
 from experiments.mock_llm import mock_model
 from main import app
 
+# These tests describe the v1 policy (M7); the default gated policy (M8) is covered in test_product_policy.py.
+pytestmark = pytest.mark.usefixtures("policy_v1")
+
 
 @pytest.fixture
 def client():

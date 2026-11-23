@@ -1,0 +1,180 @@
+{
+ "analysis_id": "A0005",
+ "decision": {
+  "adr_id": "ADR-016",
+  "direct_verdict": null,
+  "escalate": true,
+  "failed_gates": [
+   "G_temporal",
+   "G_conditions"
+  ],
+  "final_verdict": "violation",
+  "forced": false,
+  "llm_called": true,
+  "outcome_source": "llm_extract",
+  "policy": "gated",
+  "reasons": [
+   "R2: G_temporal: 2 date(s) in the decision but 0 recognised cut-off clause(s)",
+   "R2: G_conditions: condition or hedge word 'but'"
+  ],
+  "resolution": "extract_compute",
+  "route": "escalate"
+ },
+ "evidence": {
+  "adrs": [
+   {
+    "date": "2025-09-03",
+    "id": "ADR-016",
+    "match_reasons": [
+     "rule_id",
+     "file_names",
+     "component_types"
+    ],
+    "path": "architecture/adr/0016-time-limit-on-direct-ledger_repository-a.md",
+    "status": "accepted",
+    "status_raw": "Accepted",
+    "text": "# 16. Time limit on direct ledger_repository access from ledger_controller\n\nDate: 2025-09-03\n\n## Status\n\nAccepted\n\n## Context\n\nRule R005 forbids this access, but reporting queries need a consistent read snapshot, and the proper layer will take a while.\n\n## Decision\n\nExisting direct access from `ledger_controller` to `ledger_repository` stays acceptable while the layer is being built, but only if it predates 2025-10-01. A dependency of this kind added after 2025-10-01 is a breach of R005.\n\n## Consequences\n\nTolerated access is removed once the layer is ready.\n",
+    "title": "Time limit on direct ledger_repository access from ledger_controller"
+   }
+  ],
+  "evolution": {
+   "age_days": 115,
+   "authors_since_introduction": [
+    "alice",
+    "bob"
+   ],
+   "available": true,
+   "commits_examined": 6,
+   "commits_since_introduction": 10,
+   "first_introduced_at": "2025-08-13T12:00:00+00:00",
+   "history_truncated": false,
+   "introduced_at": "2025-08-13T12:00:00+00:00",
+   "introduced_with_file_creation": false,
+   "introducing_commit": {
+    "author": "alice",
+    "date": "2025-08-13T12:00:00+00:00",
+    "message": "Include ledger timestamps in output",
+    "sha": "908810a8c277ae1aff12c8f55a069175b81169bf",
+    "short": "908810a8",
+    "subject": "Include ledger timestamps in output"
+   },
+   "message_signals": {
+    "adr_references": [],
+    "issue_references": [],
+    "migration_language": [],
+    "temporary_language": []
+   },
+   "present_at_head": true,
+   "reintroduced": false,
+   "relevant_commits_since_introduction": 3,
+   "rename_history_detected": false,
+   "snapshot_commit": "ca4ebc24",
+   "snapshot_date": "2025-12-06T12:00:00+00:00",
+   "source": "app/controllers/ledger_controller.py",
+   "target": "app/repositories/ledger_repository.py",
+   "timeline": [
+    {
+     "author": "alice",
+     "change": "introduced",
+     "date": "2025-08-13T12:00:00+00:00",
+     "sha": "908810a8c277ae1aff12c8f55a069175b81169bf",
+     "short": "908810a8",
+     "subject": "Include ledger timestamps in output"
+    }
+   ]
+  },
+  "finding_key": "R005|app/controllers/ledger_controller.py|app/repositories/ledger_repository.py",
+  "rule": {
+   "description": "Controllers must not skip the Service layer to call Repositories directly.",
+   "id": "R005",
+   "name": "no-controller-repository",
+   "relation": "forbidden"
+  },
+  "snapshot_date": "2025-12-06T12:00:00+00:00",
+  "structural": {
+   "code_snippet": "   1: from app.repositories.ledger_repository import LedgerRepository\n   2: from app.services.ledger_service import LedgerService\n   3: \n   4: \n   5: class LedgerController:",
+   "import": "app.repositories.ledger_repository.LedgerRepository",
+   "line": 1,
+   "source": "app/controllers/ledger_controller.py",
+   "source_type": "controller",
+   "target": "app/repositories/ledger_repository.py",
+   "target_type": "repository"
+  }
+ },
+ "evolution_evidence": {
+  "age_days": 115,
+  "authors_since_introduction": [
+   "alice",
+   "bob"
+  ],
+  "available": true,
+  "commits_examined": 6,
+  "commits_since_introduction": 10,
+  "first_introduced_at": "2025-08-13T12:00:00+00:00",
+  "history_truncated": false,
+  "introduced_at": "2025-08-13T12:00:00+00:00",
+  "introduced_with_file_creation": false,
+  "introducing_commit": {
+   "author": "alice",
+   "date": "2025-08-13T12:00:00+00:00",
+   "message": "Include ledger timestamps in output",
+   "sha": "908810a8c277ae1aff12c8f55a069175b81169bf",
+   "short": "908810a8",
+   "subject": "Include ledger timestamps in output"
+  },
+  "message_signals": {
+   "adr_references": [],
+   "issue_references": [],
+   "migration_language": [],
+   "temporary_language": []
+  },
+  "present_at_head": true,
+  "reintroduced": false,
+  "relevant_commits_since_introduction": 3,
+  "rename_history_detected": false,
+  "snapshot_commit": "ca4ebc24",
+  "snapshot_date": "2025-12-06T12:00:00+00:00",
+  "source": "app/controllers/ledger_controller.py",
+  "target": "app/repositories/ledger_repository.py",
+  "timeline": [
+   {
+    "author": "alice",
+    "change": "introduced",
+    "date": "2025-08-13T12:00:00+00:00",
+    "sha": "908810a8c277ae1aff12c8f55a069175b81169bf",
+    "short": "908810a8",
+    "subject": "Include ledger timestamps in output"
+   }
+  ]
+ },
+ "finding_id": "F002",
+ "semantic_analysis": {
+  "cached": false,
+  "computed": "decision does_not_address",
+  "confidence": null,
+  "error": null,
+  "evidence_used": [],
+  "explanation": "Keyword stand-in extraction.",
+  "extract_version": "x4",
+  "extraction": {
+   "adr_id": "ADR-016",
+   "attribution": "not applicable",
+   "covers_this_dependency": "yes",
+   "decision": "does_not_address",
+   "explanation": "Keyword stand-in extraction.",
+   "grounding": "no limit claimed",
+   "limit": "none",
+   "limit_date": null
+  },
+  "latency_s": 4.852400002164359e-05,
+  "mode": "extract_compute",
+  "model": "stub-model",
+  "parsed_ok": true,
+  "tokens_estimated": true,
+  "tokens_used": {
+   "input": 981,
+   "output": 42
+  },
+  "verdict": "violation"
+ }
+}

@@ -1,0 +1,100 @@
+{
+ "case_study": {
+  "cases": [
+   {
+    "case_id": "C01",
+    "expected": "justified",
+    "m7": "violation",
+    "m7_correct": false
+   },
+   {
+    "case_id": "C02",
+    "expected": "violation",
+    "m7": "violation",
+    "m7_correct": true
+   },
+   {
+    "case_id": "C03",
+    "expected": "violation",
+    "m7": "violation",
+    "m7_correct": true
+   },
+   {
+    "case_id": "C04",
+    "expected": "violation",
+    "m7": "violation",
+    "m7_correct": true
+   },
+   {
+    "case_id": "C05",
+    "expected": "violation",
+    "m7": "justified",
+    "m7_correct": false
+   },
+   {
+    "case_id": "C06",
+    "expected": "justified",
+    "m7": "justified",
+    "m7_correct": true
+   },
+   {
+    "case_id": "C07",
+    "expected": "violation",
+    "m7": "violation",
+    "m7_correct": true
+   }
+  ],
+  "hidden_violations": 1,
+  "m6_pipeline_correct": 5,
+  "m7_correct": 5,
+  "n": 7,
+  "n_violations": 5
+ },
+ "false_permission": {
+  "band": "LOW",
+  "dangerous": {
+   "ci_high": 0.08029831778201396,
+   "ci_low": 6.938893903907228e-18,
+   "k": 0,
+   "n": 44
+  },
+  "dangerous_after_attribution": {
+   "ci_high": 0.08029831778201396,
+   "ci_low": 6.938893903907228e-18,
+   "k": 0,
+   "n": 44
+  },
+  "failures": 0,
+  "misleading": {
+   "ci_high": 0.08029831778201396,
+   "ci_low": 6.938893903907228e-18,
+   "k": 0,
+   "n": 44
+  },
+  "n_excluded_empty": 1,
+  "n_inactive_control": 5,
+  "n_primary": 44,
+  "pipeline_false_justified": {
+   "ci_high": 0.08029831778201396,
+   "ci_low": 6.938893903907228e-18,
+   "k": 0,
+   "n": 44
+  },
+  "routes": {
+   "code_reader": 0,
+   "model": 0,
+   "structural": 44
+  },
+  "selected_by_matcher": {
+   "ci_high": 0.11807979131537633,
+   "ci_low": 0.004023148385637013,
+   "k": 1,
+   "n": 44
+  },
+  "thresholds": {
+   "HIGH": ">=5",
+   "LOW": "0-2",
+   "MODERATE": "3-4"
+  }
+ }
+}

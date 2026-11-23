@@ -1,0 +1,43 @@
+{
+ "analysis_id": "A0004",
+ "items": [
+  {
+   "active_adr_count": 1,
+   "adr_count": 1,
+   "age_days": 138,
+   "direct_verdict": "justified",
+   "escalate": false,
+   "failed_gates": [],
+   "finding_id": "F001",
+   "introduced_at": "2025-05-17T12:00:00+00:00",
+   "key": "R005|app/controllers/order_controller.py|app/repositories/order_repository.py",
+   "policy": "gated",
+   "reasons": [
+    "R1: ADR-006 read by code and passed every gate (permits; )"
+   ],
+   "route": "direct_code",
+   "rule_id": "R005",
+   "source": {
+    "component": "controller",
+    "id": "app/controllers/order_controller.py",
+    "name": "order_controller.py"
+   },
+   "target": {
+    "component": "repository",
+    "id": "app/repositories/order_repository.py",
+    "name": "order_repository.py"
+   }
+  }
+ ],
+ "summary": {
+  "by_route": {
+   "direct_code": 1,
+   "direct_structural": 0,
+   "escalate": 0
+  },
+  "needs_semantic_review": 0,
+  "policy": "gated",
+  "resolved_directly": 1,
+  "violations": 1
+ }
+}

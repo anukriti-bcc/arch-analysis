@@ -1,4 +1,4 @@
-"""PostgreSQL storage (synopsis tech stack), tested against a REAL PostgreSQL server, not a mock.
+"""PostgreSQL storage, tested against a REAL PostgreSQL server, not a mock.
 
 The server is an embedded PostgreSQL started by the `pgserver` package, or the one named by POSTGRES_TEST_URL. If neither is available the
 tests are skipped (the rest of the suite needs no database). The key test runs the same API flow on the memory store and on PostgreSQL and
@@ -22,6 +22,9 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from main import app  # noqa: E402
 from storage.postgres_store import PostgresStore  # noqa: E402
+
+# These tests describe the v1 policy (M7); the default gated policy (M8) is covered in test_product_policy.py.
+pytestmark = pytest.mark.usefixtures("policy_v1")
 
 
 @pytest.fixture(scope="module")
@@ -138,7 +141,9 @@ def test_summaries_are_computed_in_sql_and_match_the_run(pg, api_on, bench_root)
 
 
 def test_health_reports_the_backend(api_on):
-    assert api_on.get("/health").json() == {"status": "ok", "storage": {"backend": "postgresql", "ok": True}}
+    body = api_on.get("/health").json()
+    assert body["status"] == "ok" and body["storage"] == {"backend": "postgresql", "ok": True}
+    assert body["escalation_policy"] in ("gated", "v1") and body["attribution_check"] in ("on", "off")
 
 
 def test_health_reports_a_dead_database_instead_of_crashing():

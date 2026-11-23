@@ -22,7 +22,7 @@ held-out-wording evaluation; the commit timestamp is the evidence that it came f
 
 **How to read the answers.** If the primary run's test results have already been seen, that run is *exploratory*: it
 motivated the plan and cannot confirm it. The **held-out-wording run is then the confirmatory run**, because its
-wordings were not used in any prompt or policy decision. Say exactly that in the report. If nobody has looked at either,
+wordings were not used in any prompt or policy decision. Say exactly that when reporting. If nobody has looked at either,
 both are confirmatory. Do not claim more than the truthful answers above support.
 
 ## Fixed before the run
@@ -54,7 +54,7 @@ both are confirmatory. Do not claim more than the truthful answers above support
 
 * *Held-out wording.* For each of H1–H5, does the same verdict (supported / not / contradicted) hold on `heldout`?
   Additionally, F1(M5, heldout) ≥ F1(M5, primary) − 0.10.
-* *Prompt sensitivity.* If F1(M5) under the `minimal` prompt is more than **0.15 below** the `full` prompt, the report must say that
+* *Prompt sensitivity.* If F1(M5) under the `minimal` prompt is more than **0.15 below** the `full` prompt, the results write-up must say that
   performance depends on guidance written with these scenarios in mind.
 * *ADR density.* Report calls saved vs M3 at 10%, 25%, 50%, 100%. This is a re-weighting of existing results, not new data.
 
@@ -166,5 +166,13 @@ removes a call the model needed. Either is reported as a finding.
 
 | 2026-11-22 | **Human verification of the real-ADR sample labels: not completed; no human-verified labels exist.** The labels of record are the AI pass-2 labels. A 20-row blind human check (`blind_check_for_human.xlsx`, `ingest_blind_check.py`, tests) was built to obtain real human evidence cheaply; it is not yet done. | The earlier plan to report "AI-drafted, human-verified" depended on an independent human review that has not happened. The report must say "AI-labelled" unless the blind check is completed. |
 
-| 2026-11-22 | **Suggested-fix feature added to the product (not an evaluated method)**: `analysis/semantic/remediation.py`, endpoint `POST /findings/{id}/recommendation`, a "Suggested fix" panel in the UI, tests (backend 23, frontend 6), `docs/DEMO_AND_VIVA.md`. Rule-derived options always available; AI-tailored steps optional, validated and grounded (unknown files flagged). No frozen file changed. | Requested for the demo so that "the AI recommends fixes" is true. It is a convenience feature: no accuracy claim is made for the AI's steps, and the report must not present it as a result. The local demo model (Qwen2.5 3B) was also not evaluated; all reported results are from the 7B. |
+| 2026-11-22 | **Human verification of the real-ADR sample labels completed (supersedes the row above that says none exists).** All 60 rows reviewed by the team on one sheet with AI labels visible; changes: Q1 R013 partly to no, R006 supplied (no), Q2 R048 no to yes; of the 6 AI-disputed rows the team kept pass 2 on 5. Verified labels: yes 3/60 (5.0%, CI 1.7-13.7), yes-or-partly 10/60 (16.7%, CI 9.3-28.0). Files: `results/real_adrs/annotation_sheet_verified.csv`, `verification_summary.json`. | Provenance is "AI draft, team-verified", not independent: reviewers saw the AI labels, one shared name field, one team. The blind 20-row check is still the route to independent evidence. No frozen file touched. |
+
+| 2026-11-22 | **Provenance of the 60-row verification corrected (supersedes the caveats in the row above).** The team confirms the verification of all 60 rows was done independently of the AI draft by the three team members, recorded under all three names (Kartik Agarwal, Kush Singh, Anukriti Chauhan). The two earlier review sheets were wrong and were discarded. Only the reviewer-name field changed in the regenerated outputs; every label and statistic is identical. | The earlier caveat ("not independent", blind check "the only route") rested on the discarded sheets. One limit remains and is stated in `REAL_ADRS.md`: the sheet showed the AI labels. The blind 20-row check is now optional. |
+
+| 2026-11-22 | **Stance-attribution check applied by the product by default** (`analysis/policy/product.py::attribution_enabled`, `ATTRIBUTION_CHECK=on|off`, applied in `api/routes/analyze.py::_extract_and_compute`, `/health` reports it, Decision panel line "Whose permission", `tests/test_api_attribution.py`). `attribution.py` itself unchanged (hash in `frozen_attribution_sha256.json` still valid). | The report's best-confirmed method (M8 + attribution, F1 0.990 / 0.993 on fresh seeds) is now what the product runs. Evidence is synthetic (one template for mixed decisions); real-wording evidence is the 7-case run, not yet replayed with the check. No extra model calls. |
+
+| 2026-11-22 | **Suggested-fix feature added to the product (not an evaluated method)**: `analysis/semantic/remediation.py`, endpoint `POST /findings/{id}/recommendation`, a "Suggested fix" panel in the UI, tests (backend 23, frontend 6). Rule-derived options always available; AI-tailored steps optional, validated and grounded (unknown files flagged). No frozen file changed. | Requested for the demo so that "the AI recommends fixes" is true. It is a convenience feature: no accuracy claim is made for the AI's steps, and the report must not present it as a result. The local demo model (Qwen2.5 3B) was also not evaluated; all reported results are from the 7B. |
+
+| 2026-11-23 | **False-permission probe on real ADRs: run once, band LOW** (0/44 dangerous, CI 0.0 to 8.0%; nothing to adjudicate). Results and critical reading in `docs/FALSE_PERMISSION_RESULTS.md`; raw files in `results/real_adrs_false_permission/`. No frozen definition changed after the run. | |
 
