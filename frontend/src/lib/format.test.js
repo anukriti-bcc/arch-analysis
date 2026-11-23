@@ -28,10 +28,13 @@ describe("format helpers", () => {
     ["accepted", "proposed", "unknown", "", undefined].forEach((s) => expect(isActiveAdrStatus(s)).toBe(true));
   });
   it("labels methods, including seeded M4 runs", () => {
-    expect(methodLabel("M5_evidence_guided")).toContain("proposed");
+    expect(methodLabel("M5_evidence_guided")).not.toContain("proposed");
+    expect(methodLabel("M8_gated_attr")).toContain("proposed");
     expect(methodLabel("M4_generic_selective_s3")).toBe("M4 Generic selective (seed 3)");
     expect(methodLabel("A2_no_intent")).toBe("A2 No intent evidence");
     expect(methodLabel("custom")).toBe("custom");
     expect(methodShort("M3_full_hybrid")).toBe("M3");
+    expect(methodShort("M8_gated")).toBe("M8");
+    expect(methodShort("M8_gated_attr")).toBe("M8+attr");   // must differ from M8_gated
   });
 });

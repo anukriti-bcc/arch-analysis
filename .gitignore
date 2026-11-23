@@ -12,6 +12,8 @@ dist/
 
 # generated benchmark repositories (nested .git dirs) and experiment outputs
 datasets/benchmark/generated/
+# demo repo with its own git history; rebuild with: cd backend && python scripts/make_sample_history.py
+datasets/sample-ecommerce-history/
 results/
 
 # real ADR texts belong to their authors: only the manifest and analysis are published

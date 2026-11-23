@@ -83,10 +83,17 @@ export const METHOD_LABELS = {
   M2_llm_only: "M2 LLM-only",
   M3_full_hybrid: "M3 Full hybrid",
   M4_generic_selective_mean: "M4 Generic selective (mean of seeds)",
-  M5_evidence_guided: "M5 Evidence-guided (proposed)",
+  M5_evidence_guided: "M5 Evidence-guided (v1 policy)",
+  M6_deterministic_adr: "M6 Code-only ADR reader",
+  M7_extract_compute: "M7 Extract-then-compute",
+  M8_gated: "M8 Readability-gated",
+  M8_gated_attr: "M8 Gated + attribution (proposed)",
   A1_no_history: "A1 No evolution evidence",
   A2_no_intent: "A2 No intent evidence",
 };
+
+// The method the project proposes as its final approach (what the product runs by default).
+export const PROPOSED_METHOD = "M8_gated_attr";
 
 export function methodLabel(method) {
   if (METHOD_LABELS[method]) return METHOD_LABELS[method];
@@ -94,7 +101,11 @@ export function methodLabel(method) {
   return seed ? `M4 Generic selective (seed ${seed[1]})` : method;
 }
 
+// Short chart/column label. M8 and M8+attr need distinct labels, otherwise both read "M8".
+const SHORT_OVERRIDES = { M8_gated_attr: "M8+attr" };
+
 export function methodShort(method) {
+  if (SHORT_OVERRIDES[method]) return SHORT_OVERRIDES[method];
   const m = /^([A-Z]\d)/.exec(method || "");
   return m ? m[1] : method;
 }

@@ -134,7 +134,12 @@ def get_run(name: str) -> dict:
     metrics = pd.read_csv(metrics_file)
     def optional(filename: str) -> list[dict]:
         file = os.path.join(path, filename)
-        return _records(pd.read_csv(file)) if os.path.isfile(file) else []
+        if not os.path.isfile(file):
+            return []
+        try:
+            return _records(pd.read_csv(file))
+        except pd.errors.EmptyDataError:  # e.g. paired_comparisons.csv of an M2-only run holds no rows
+            return []
 
     return {"name": name, "config": cfg, "smoke_test": cfg.get("provider") == "mock",
             "metrics": _records(metrics), "by_scenario": optional("metrics_by_scenario.csv"),
