@@ -17,3 +17,5 @@ results/
 # real ADR texts belong to their authors: only the manifest and analysis are published
 datasets/real_adrs*/corpus/
 datasets/real_adrs*/candidates.json
+
+.env

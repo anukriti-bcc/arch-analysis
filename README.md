@@ -71,6 +71,14 @@ npm install
 npm run dev                                     # http://localhost:5173  (proxies /api to :8000)
 ```
 
+### Quick start with Docker (one command, no extra terminals)
+
+```bash
+docker compose up --build                  # backend :8000 + frontend :5173
+docker compose --profile db up --build     # also starts PostgreSQL (set DATABASE_URL in .env, see .env.example)
+```
+Ollama stays on your host; the backend reaches it at `http://host.docker.internal:11434/v1`. Override `LLM_MODEL` etc. via `.env`. The repo is bind-mounted, so code edits reload live and the default `../datasets/...` paths work.
+
 By default the API keeps runs in memory. Set `DATABASE_URL` (a PostgreSQL connection string) to store runs in PostgreSQL so they survive restarts; `/health` reports the backend in use.
 
 Open the UI → **Run analysis** (defaults to the bundled demo repo) → Graph → Findings → open a

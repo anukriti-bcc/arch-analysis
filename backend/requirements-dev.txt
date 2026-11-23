@@ -1,4 +1,5 @@
 -r requirements.txt
 import-linter
+openpyxl
 pytest-cov
 scikit-learn

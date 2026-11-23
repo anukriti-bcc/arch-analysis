@@ -1,0 +1,64 @@
+# One command instead of several terminals:
+#   docker compose up --build                      # backend + frontend (in-memory storage)
+#   docker compose --profile db up --build         # ...plus PostgreSQL (runs survive restarts)
+#
+# UI:  http://localhost:5173      API docs: http://localhost:8000/docs
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    working_dir: /app/backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # whole repo at /app so ../datasets, ../results and live code reload work
+      - .:/app
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      # Ollama runs on your host, not in a container
+      LLM_BASE_URL: ${LLM_BASE_URL:-http://host.docker.internal:11434/v1}
+      LLM_MODEL: ${LLM_MODEL:-qwen2.5:3b-instruct}
+      LLM_API_KEY: ${LLM_API_KEY:-ollama}
+      ESCALATION_POLICY: ${ESCALATION_POLICY:-gated}
+      ATTRIBUTION_CHECK: ${ATTRIBUTION_CHECK:-on}
+      # Set DATABASE_URL in .env to use the db profile, e.g.
+      # DATABASE_URL=postgresql://arch:arch@db:5432/arch
+      DATABASE_URL: ${DATABASE_URL:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # needed on Linux; harmless on Docker Desktop
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_TARGET: http://backend:8000
+      CHOKIDAR_USEPOLLING: "true"             # file watching on Windows/macOS bind mounts
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules   # keep container's node_modules, not the host's
+    depends_on:
+      - backend
+
+  db:
+    image: postgres:16-alpine
+    profiles: ["db"]
+    environment:
+      POSTGRES_USER: arch
+      POSTGRES_PASSWORD: arch
+      POSTGRES_DB: arch
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arch"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  frontend_node_modules:
+  pgdata:
